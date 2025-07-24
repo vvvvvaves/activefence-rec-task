@@ -1,0 +1,14 @@
+{
+    "key": ["post_url", "assessment_timestamp"],
+    "properties": {
+            "score": "number",
+            "post_url": "string",
+            "assessment_report": "string",
+            "assessment_timestamp": "string",
+            "related_comments": [
+                {
+                        "key": "comment_url"
+                }
+            ]
+    }
+}

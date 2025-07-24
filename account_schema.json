@@ -1,0 +1,11 @@
+{
+    "key": "username",
+    "properties": {
+        "username": "string",
+        "posts": [
+            {
+                "key": "post_url"
+            }
+        ]
+    }
+}

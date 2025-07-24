@@ -1,0 +1,14 @@
+{
+    "key": ["username", "assessment_timestamp"],
+    "properties": {
+        "username": "string",
+        "score": "number",
+        "assessment_report": "string",
+        "assessment_timestamp": "string",
+        "related_post_assessments": [
+            {
+                "key": ["post_url", "assessment_timestamp"]
+            }
+        ]
+    }
+}
