@@ -1,7 +1,7 @@
 from collections import defaultdict, Counter
 from datetime import datetime, timedelta
 from api import get_subreddit_posts, get_posts_comments
-from utils import save_json, posts_to_dict, comments_to_dict
+from utils import save_json, to_dict
 from collections import defaultdict, Counter
 from datetime import datetime, timedelta
 
@@ -246,8 +246,8 @@ def assess_community_health(reddit, subreddit_name, num_posts=100, days_back=30)
     """
     posts = get_subreddit_posts(subreddit_name, num_posts=num_posts, days_back=days_back, sort_by='new')
     comments = get_posts_comments(posts)
-    posts_dict = posts_to_dict(posts)
-    comments_dict = comments_to_dict(comments)
+    posts_dict = to_dict(posts)
+    comments_dict = to_dict(comments)
     metrics = get_community_health_metrics(posts_dict, comments_dict)
     print_health_summary(metrics, subreddit_name)
     save_json(posts_dict, f"data/subreddits/{subreddit_name}/posts_raw.json")

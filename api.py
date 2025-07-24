@@ -112,8 +112,8 @@ def get_posts_comments(posts, days_back=30):
     for post in posts:
         cutoff_date = datetime.utcnow() - timedelta(days=days_back)
         try:
-            post.comments.replace_more(limit=5)
-            for comment in post.comments.list():
+            _comments = post.comments.list()
+            for comment in _comments:
                 comment_date = datetime.utcfromtimestamp(comment.created_utc)
                 if comment_date < cutoff_date:
                     continue
@@ -121,3 +121,45 @@ def get_posts_comments(posts, days_back=30):
         except Exception as e:
             print(f"Error processing comments for post {post.id}: {e}")
     return comments
+
+def get_user(reddit, username):
+    """
+    Fetch a Reddit user object using PRAW.
+    
+    Input:
+        username (str): The Reddit username to fetch.
+    Output:
+        praw.models.Redditor: The Reddit user object.
+    """
+    try:
+        user = reddit.redditor(username)
+        # Optionally, trigger a fetch to ensure the user exists (raises exception if not)
+        _ = user.id
+        return user
+    except Exception as e:
+        print(f"Error fetching user '{username}': {e}")
+        return None
+
+
+def get_user_posts(user, num_posts=10, sort_by='new'):
+    """
+    Fetch posts (submissions) made by a Reddit user.
+    
+    Input:
+        user (praw.models.Redditor): The Reddit user object.
+        num_posts (int, optional): Number of posts to fetch. Default is 10.
+        sort_by (str, optional): Sorting method. One of 'new', 'hot', 'top', 'controversial'. Default is 'new'.
+    Output:
+        list of praw.models.Submission: List of Reddit post objects submitted by the user.
+    """
+    if sort_by == 'new':
+        posts = user.submissions.new(limit=num_posts)
+    elif sort_by == 'hot':
+        posts = user.submissions.hot(limit=num_posts)
+    elif sort_by == 'top':
+        posts = user.submissions.top(limit=num_posts)
+    elif sort_by == 'controversial':
+        posts = user.submissions.controversial(limit=num_posts)
+    else:
+        raise ValueError("Invalid sort_by value. Use 'new', 'hot', 'top', or 'controversial'.")
+    return list(posts)

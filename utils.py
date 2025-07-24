@@ -1,33 +1,21 @@
 import json
 import os
+from datetime import datetime
+import copy
 
-def posts_to_dict(posts):
+def to_dict(objects):
     """
-    Convert a list of post objects to a list of dicts using the .d_ attribute.
+    Convert a list of objects to a list of dicts using the .d_ attribute.
     
     Input:
-        posts (list of praw.models.Submission or praw.models.Submission): List of post objects or a single post object.
+        objects (list of praw.models.Submission or praw.models.Comment or praw.models.Redditor): List of post objects or a single post object.
     Output:
         list of dict: List of dictionaries representing the post data (using .d_ attribute).
     """
-    if isinstance(posts, list):
-        return [post.__dict__ for post in posts]
+    if isinstance(objects, list):
+        return [copy.deepcopy(obj).__dict__ for obj in objects]
     else:
-        return [posts.__dict__]
-
-def comments_to_dict(comments):
-    """
-    Convert a list of comment objects to a list of dicts using the .d_ attribute.
-    
-    Input:
-        comments (list of praw.models.Comment or praw.models.Comment): List of comment objects or a single comment object.
-    Output:
-        list of dict: List of dictionaries representing the comment data (using .d_ attribute).
-    """
-    if isinstance(comments, list):
-        return [comment.__dict__ for comment in comments]
-    else:
-        return [comments.__dict__]
+        return [copy.deepcopy(objects).__dict__]
 
 def save_json(data, filename):
     """
@@ -42,11 +30,20 @@ def save_json(data, filename):
         None. Writes data to the specified JSON file.
     """
     os.makedirs(os.path.dirname(filename), exist_ok=True)
-    non_serializable = ['_replies', 'author', '_submission', '_reddit', 'subreddit', '_comments', 'body_html', 'body']
+    non_serializable = ['_replies', '_submission', '_reddit', '_comments', 'selftext_html']
     for i, d in enumerate(data):
         for key in non_serializable:
             if key in d.keys():
                 data[i].pop(key)
+
+        if 'subreddit' in d.keys():
+            d['subreddit'] = d['subreddit'].display_name
+
+        if 'author' in d.keys():
+            d['author'] = d['author'].name
+
+        if 'created_utc' in d.keys():
+            d['created_utc'] = datetime.fromtimestamp(d['created_utc']).strftime('%Y-%m-%d %H:%M:%S')
 
         if '_comments_by_id' in d.keys():
             _comments_by_id = d.pop('_comments_by_id')
