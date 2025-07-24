@@ -1,14 +1,15 @@
 {
-    "key": ["post_url"],
+   "key": ["url"],
     "properties": {
         "language": "string",
         "date_published": "string",
-        "post_text": "string",
-        "post_title": "string",
-        "post_url": "string",
-        "post_score": "number",
-        "post_comments": "number",
-        "post_author": "string",
+        "text": "string",
+        "text_en": "string",
+        "title": "string",
+        "url": "string",
+        "score": "number",
+        "comments": "number",
+        "author": "string",
         "subreddit": "string"
     }
 }

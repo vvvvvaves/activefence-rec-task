@@ -3,6 +3,7 @@
     "properties": {
         "language": "string",
         "comment_text": "string",
+        "comment_text_en": "string",
         "comment_score": "number",
         "comment_author": "string",
         "comment_timestamp": "string",
