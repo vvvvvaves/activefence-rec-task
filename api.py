@@ -5,6 +5,7 @@ import json
 from utils import get_targeting_data, to_dict
 import random
 from datetime import datetime, timedelta
+from typing import Generator
 load_dotenv()
 CLIENT_ID = os.getenv('CLIENT_ID')
 CLIENT_SECRET = os.getenv('CLIENT_SECRET')
@@ -96,7 +97,7 @@ def search_subreddit_posts(
     days_back=99999, 
     sort_by='relevance', 
     save_query=False,
-    ) -> tuple[list[praw.models.Submission], str|None]:
+    ) -> Generator[praw.models.Submission, None, None]:
     """
     Search posts within a specific subreddit using a query string.
     
@@ -110,18 +111,18 @@ def search_subreddit_posts(
     """
     subreddit = reddit.subreddit(subreddit_name)
     results = subreddit.search(query, sort=sort_by, limit=num_posts, time_filter='all')
+    cutoff_date = None
     if days_back is not None:
         cutoff_date = datetime.utcnow() - timedelta(days=days_back)
-        filtered_results = []
-        for result in results:
-            result_date = datetime.utcfromtimestamp(result.created_utc)
-            if result_date >= cutoff_date:
-                filtered_results.append(result)
-        results = filtered_results
-    if save_query:
-        return list(results), query
-    else:
-        return list(results), None
+    
+    for result in results:
+        result_date = datetime.utcfromtimestamp(result.created_utc)
+        if cutoff_date is None or result_date >= cutoff_date:
+            if save_query:
+                yield result, query
+            else:
+                yield result, None
+
     
 def get_posts_comments(
     posts, 
