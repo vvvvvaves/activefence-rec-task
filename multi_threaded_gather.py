@@ -2,9 +2,20 @@ import threading
 import time
 from tqdm import tqdm
 from datetime import datetime
-from api import get_client, get_posts_comments, search_subreddit_posts
-from llm.perspective_api import get_client as get_perspective_client, get_perspective_api_score, clean_response_flat
-from utils import get_targeting_data, to_dict, save_json
+from api import (
+    get_client, 
+    get_posts_comments, 
+    search_subreddit_posts
+    )
+from llm.perspective_api import (
+    get_client as get_perspective_client, 
+    get_perspective_api_score, 
+    clean_response_flat
+    )
+from submodules.google_api.google_sheets_api import (
+    add_rows_to_sheet
+    )
+from utils import get_targeting_data, to_dict, save_json, get_gsheets_api
 import random
 import os
 
@@ -13,6 +24,14 @@ DAYS_BACK = 99999
 POSTS_PER_QUERY = 40
 REDDIT_RATE_LIMIT_SECONDS = 0.6 # 100 requests per minute
 PERSPECTIVE_RATE_LIMIT_SECONDS = 1 # 1 request per second
+
+gsheets_api = get_gsheets_api()
+
+google_sheets_service = gsheets_api['google_sheets_service']
+spreadsheet_id = gsheets_api['spreadsheet_id']
+POSTS_SHEET_ID = gsheets_api['posts_sheet_id']
+COMMENTS_SHEET_ID = gsheets_api['comments_sheet_id']
+
 
 # Worker function for each subreddit
 def worker(subreddit_name, progress_bar):
@@ -68,6 +87,12 @@ def worker(subreddit_name, progress_bar):
     def save_post_and_comments(post_dict, comments_dict, post_id, post_created):
         save_json(post_dict, f"data/subreddits/{subreddit_name}/posts/post_{post_id}_{int(post_created)}.json")
         save_json(comments_dict, f"data/subreddits/{subreddit_name}/comments/comments_{post_id}.json")
+        
+    def save_comments_to_gsheets(comments_dict):
+        add_rows_to_sheet(google_sheets_service, spreadsheet_id, COMMENTS_SHEET_ID, comments_dict, list(comments_dict[0].keys()))
+    
+    def save_posts_to_gsheets(posts_dict):
+        add_rows_to_sheet(google_sheets_service, spreadsheet_id, POSTS_SHEET_ID, posts_dict, list(posts_dict[0].keys()))
 
     while posts_collected < NUM_POSTS:
         num_posts_per_query = min(POSTS_PER_QUERY, NUM_POSTS - posts_collected)
@@ -75,6 +100,7 @@ def worker(subreddit_name, progress_bar):
         random_neut = random.choice(search_terms_neutral)
         query = f"{random_neg} {random_neut}"
         generator = get_posts(query, num_posts_per_query)
+        posts_dict = []
         for post, _ in generator:
             comments = get_comments(post)
             post_dict = clean_post(post, query)
@@ -82,11 +108,16 @@ def worker(subreddit_name, progress_bar):
             post_id = post_dict['id']
             comments_dict = clean_comments(comments, query)
             save_post_and_comments(post_dict, comments_dict, post_id, post_created)
+            if comments_dict:
+                save_comments_to_gsheets(comments_dict)
+            posts_dict.append(post_dict)
             progress_bar.update(1)
             posts_collected += 1
             time.sleep(REDDIT_RATE_LIMIT_SECONDS)
             if posts_collected >= NUM_POSTS:
                 break
+        if posts_dict:
+            save_posts_to_gsheets(posts_dict)
     progress_bar.close()
 
 def main():

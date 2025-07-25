@@ -1,14 +1,37 @@
 {
-    "key": "comment_url",
     "properties": {
-        "language": "string",
-        "comment_text": "string",
-        "comment_text_en": "string",
-        "comment_score": "number",
-        "comment_author": "string",
-        "comment_timestamp": "string",
-        "comment_url": "string",
-        "subreddit": "string",
-        "post_url": "string"
+        "author_is_blocked": {
+            "type": "boolean"
+        },
+        "subreddit": {
+            "type": "string"
+        },
+        "id": {
+            "type": "string"
+        },
+        "author": {
+            "type": "string"
+        },
+        "score": {
+            "type": "number"
+        },
+        "body": {
+            "type": "string"
+        },
+        "downs": {
+            "type": "number"
+        },
+        "created": {
+            "type": "number"
+        },
+        "controversiality": {
+            "type": "number"
+        },
+        "ups": {
+            "type": "number"
+        },
+        "query": {
+            "type": "string"
+        }
     }
 }

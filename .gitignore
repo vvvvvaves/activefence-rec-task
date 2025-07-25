@@ -2,7 +2,10 @@
 .env
 __pycache__/
 */__pycache__/
+submodules/google_api/__pycache__/
 /data/subreddits/
 try.py
 test.py
 /tests/tests/
+client_secrets.json
+token.json

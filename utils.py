@@ -4,6 +4,17 @@ from datetime import datetime
 import copy
 import praw
 from typing import Generator
+from submodules.google_api.creds_and_service import (
+    get_credentials,
+    get_sheets_service,
+    get_drive_service
+    )
+from submodules.google_api.google_sheets_api import (
+    create_sheet, 
+    create_table_from_schema, 
+    add_rows_to_sheet,
+    add_sheet_to_spreadsheet
+    )
 
 def to_dict(objects, clean=True):
     """
@@ -69,6 +80,7 @@ def clean_dict(data):
         'downs'
     ]
 
+    # TODO: here its incorrect. requested attribute is not the full key, just a prefix.
     requested_attributes = get_targeting_data()['requestedAttributes']
     clean_data = []
     for d in data:
@@ -84,3 +96,27 @@ def save_json(data_dict, filename):
 def get_targeting_data():
     with open('targeting.json', 'r', encoding='utf-8') as f:
         return json.load(f)
+
+def get_gsheets_api():
+    targeting_data = get_targeting_data()
+    google_credentials = get_credentials(client_secrets_path='client_secrets.json')
+    google_sheets_service = get_sheets_service(google_credentials)
+    if targeting_data['spreadsheet_id'] is None:
+        spreadsheet_id = create_sheet(google_sheets_service, targeting_data['spreadsheet_name'])
+        posts_sheet_id = add_sheet_to_spreadsheet(google_sheets_service, spreadsheet_id, sheet_title=targeting_data['posts_sheet_name'])
+        comments_sheet_id = add_sheet_to_spreadsheet(google_sheets_service, spreadsheet_id, sheet_title=targeting_data['comments_sheet_name'])
+        create_table_from_schema(google_sheets_service, spreadsheet_id, sheet_id=posts_sheet_id, table_name=targeting_data['posts_sheet_name'], schema_path='data/schemas/post_schema.json')
+        create_table_from_schema(google_sheets_service, spreadsheet_id, sheet_id=comments_sheet_id, table_name=targeting_data['comments_sheet_name'], schema_path='data/schemas/comment_schema.json')
+        # create_table_from_schema(google_sheets_service, spreadsheet_id, sheet_id=2, table_name=targeting_data['accounts_sheet_name'], schema_path='data/schemas/account_schema.json')
+        targeting_data['spreadsheet_id'] = spreadsheet_id
+        targeting_data['posts_sheet_id'] = posts_sheet_id
+        targeting_data['comments_sheet_id'] = comments_sheet_id
+        with open('targeting.json', 'w', encoding='utf-8') as f:
+            json.dump(targeting_data, f, indent=4)
+    return {
+        'google_sheets_service': google_sheets_service,
+        'spreadsheet_id': targeting_data['spreadsheet_id'],
+        'posts_sheet_id': targeting_data['posts_sheet_id'],
+        'comments_sheet_id': targeting_data['comments_sheet_id']
+    }
+    

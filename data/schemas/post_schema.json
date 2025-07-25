@@ -1,15 +1,49 @@
 {
-   "key": ["url"],
     "properties": {
-        "language": "string",
-        "date_published": "string",
-        "text": "string",
-        "text_en": "string",
-        "title": "string",
-        "url": "string",
-        "score": "number",
-        "comments": "number",
-        "author": "string",
-        "subreddit": "string"
+        "subreddit": {
+            "type": "string"
+        },
+        "selftext": {
+            "type": "string"
+        },
+        "title": {
+            "type": "string"
+        },
+        "downs": {
+            "type": "number"
+        },
+        "upvote_ratio": {
+            "type": "number"
+        },
+        "ups": {
+            "type": "number"
+        },
+        "score": {
+            "type": "number"
+        },
+        "created": {
+            "type": "number"
+        },
+        "over_18": {
+            "type": "boolean"
+        },
+        "author_is_blocked": {
+            "type": "boolean"
+        },
+        "id": {
+            "type": "string"
+        },
+        "author": {
+            "type": "string"
+        },
+        "url": {
+            "type": "string"
+        },
+        "_comments_by_id": {
+            "type": "array"
+        },
+        "query": {
+            "type": "string"
+        }
     }
 }
