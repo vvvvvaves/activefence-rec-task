@@ -31,13 +31,14 @@ def rotate_search_subreddit_posts(
     query = f"{search_terms[neg_rand_index]} {search_terms_neutral[neut_rand_index]}"
 
     for i in range(num_posts):
+        num_posts_per_query = 20
         random_neg = random.choice(search_terms)
         random_neut = random.choice(search_terms_neutral)
         query = f"{random_neg} {random_neut}"
         generator = search_subreddit_posts(
             subreddit_name=subreddit_name, 
             query=query, 
-            num_posts=1, 
+            num_posts=num_posts_per_query, 
             days_back=days_back, 
             sort_by=sort_by, 
             save_query=save_query
@@ -75,7 +76,7 @@ def main():
     reddit = get_client()
 
     progress_bars = [
-        tqdm(total=NUM_POSTS, desc=f"{subreddit}", position=i, leave=True)
+        tqdm(total=NUM_POSTS, desc=f"{subreddit}", position=i+1, leave=True)
         for i, subreddit in enumerate(subreddits)
     ]
 
