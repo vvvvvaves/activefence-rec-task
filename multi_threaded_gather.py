@@ -8,23 +8,11 @@ from utils import get_targeting_data, to_dict, save_json
 import random
 import os
 
-# REDDIT RATE LIMITS
-# 100 requests per minute
-# 1000 requests per 10 minutes
-
-# Shared rate limit info
-reddit_latest_RL = {'info': None}
-reddit_RL_lock = threading.Lock()
-
-# PERSPECTIVE API RATE LIMITS
-# 1 REQUEST PER SECOND
-
-perspective_latest_RL = {'info': None}
-perspective_RL_lock = threading.Lock()
-
 NUM_POSTS = 200
 DAYS_BACK = 99999
 POSTS_PER_QUERY = 40
+REDDIT_RATE_LIMIT_SECONDS = 0.6 # 100 requests per minute
+PERSPECTIVE_RATE_LIMIT_SECONDS = 1 # 1 request per second
 
 # Worker function for each subreddit
 def worker(subreddit_name, progress_bar):
@@ -92,46 +80,14 @@ def worker(subreddit_name, progress_bar):
             post_dict = clean_post(post, query)
             post_created = post_dict['created']
             post_id = post_dict['id']
-            # post_dict = add_perspective_to_post(post_dict)
             comments_dict = clean_comments(comments, query)
-            # comments_dict = add_perspective_to_comments(comments_dict)
             save_post_and_comments(post_dict, comments_dict, post_id, post_created)
             progress_bar.update(1)
             posts_collected += 1
-            # Update the shared rate limit info
-            limits = client.auth.limits
-            with reddit_RL_lock:
-                reddit_latest_RL['info'] = limits
-            if limits['remaining'] < (limits['remaining']+limits['used'])//2:
-                time.sleep(60*5) # sleep if we've hit 50% of the rate limit
-
+            time.sleep(REDDIT_RATE_LIMIT_SECONDS)
             if posts_collected >= NUM_POSTS:
                 break
     progress_bar.close()
-
-# Printer thread for rate limit status
-def printer():
-    last_printed = None
-    pbar = None
-    while True:
-        with reddit_RL_lock:
-            current = reddit_latest_RL['info']
-            if current != last_printed and current is not None:
-                used = current.get('used') or 0
-                remaining = current.get('remaining') or 0
-                total = used + remaining
-                reset_ts = current.get('reset_timestamp')
-                reset_str = datetime.fromtimestamp(reset_ts).strftime('%Y-%m-%d %H:%M:%S') if reset_ts else 'N/A'
-                desc = f"Rate limit (resets: {reset_str})"
-                if pbar is None:
-                    pbar = tqdm(total=total, desc=desc, position=0, leave=True)
-                else:
-                    pbar.total = total
-                    pbar.set_description(desc)
-                pbar.n = used
-                pbar.refresh()
-                last_printed = current
-        time.sleep(0.1)
 
 def main():
     subreddits = get_targeting_data()['subreddits']
@@ -146,9 +102,6 @@ def main():
         t = threading.Thread(target=worker, args=(subreddit, pbar), daemon=True)
         threads.append(t)
         t.start()
-    # Start the single printer thread
-    printer_thread = threading.Thread(target=printer, daemon=True)
-    printer_thread.start()
     try:
         while any(t.is_alive() for t in threads):
             time.sleep(1)
@@ -156,7 +109,6 @@ def main():
         print("Interrupted! Exiting...")
         for pbar in progress_bars:
             pbar.close()
-        # Threads are daemonic, so will exit
 
 if __name__ == "__main__":
     main() 
