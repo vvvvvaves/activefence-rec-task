@@ -6,6 +6,7 @@ from utils import get_targeting_data, to_dict
 import random
 from datetime import datetime, timedelta
 from typing import Generator
+import prawcore
 load_dotenv()
 CLIENT_ID = os.getenv('CLIENT_ID')
 CLIENT_SECRET = os.getenv('CLIENT_SECRET')
@@ -31,9 +32,8 @@ def get_client() -> praw.Reddit:
     return reddit
 
 
-reddit = get_client()
-
 def get_subreddit_posts(
+    client,
     subreddit_name, 
     num_posts=10, 
     sort_by='hot', 
@@ -51,7 +51,7 @@ def get_subreddit_posts(
     Output:
         list of praw.models.Submission: List of Reddit post objects matching the criteria.
     """
-    subreddit = reddit.subreddit(subreddit_name)
+    subreddit = client.subreddit(subreddit_name)
     if sort_by == 'hot':
         posts = subreddit.hot(limit=num_posts)
     elif sort_by == 'new':
@@ -65,14 +65,18 @@ def get_subreddit_posts(
     if days_back is not None:
         cutoff_date = datetime.utcnow() - timedelta(days=days_back)
         filtered_posts = []
-        for post in posts:
-            post_date = datetime.utcfromtimestamp(post.created_utc)
-            if post_date >= cutoff_date:
-                filtered_posts.append(post)
-        posts = filtered_posts
+        try:
+            for post in posts:
+                post_date = datetime.utcfromtimestamp(post.created_utc)
+                if post_date >= cutoff_date:
+                        filtered_posts.append(post)
+                posts = filtered_posts
+        except prawcore.exceptions.NotFound:
+            return []
     return list(posts)
 
 def search_reddit_posts(
+    client,
     query, 
     num_posts=10, 
     sort_by='relevance'
@@ -87,10 +91,11 @@ def search_reddit_posts(
     Output:
         list of praw.models.Submission: List of Reddit post objects matching the search.
     """
-    results = reddit.subreddit('all').search(query, sort=sort_by, limit=num_posts)
+    results = client.subreddit('all').search(query, sort=sort_by, limit=num_posts)
     return list(results)
 
 def search_subreddit_posts(
+    client,
     subreddit_name, 
     query, 
     num_posts=10, 
@@ -109,22 +114,26 @@ def search_subreddit_posts(
     Output:
         list of praw.models.Submission: List of Reddit post objects matching the search.
     """
-    subreddit = reddit.subreddit(subreddit_name)
+    subreddit = client.subreddit(subreddit_name)
     results = subreddit.search(query, sort=sort_by, limit=num_posts, time_filter='all')
     cutoff_date = None
     if days_back is not None:
         cutoff_date = datetime.utcnow() - timedelta(days=days_back)
     
-    for result in results:
-        result_date = datetime.utcfromtimestamp(result.created_utc)
-        if cutoff_date is None or result_date >= cutoff_date:
-            if save_query:
-                yield result, query
-            else:
-                yield result, None
+    try:
+        for result in results:
+            result_date = datetime.utcfromtimestamp(result.created_utc)
+            if cutoff_date is None or result_date >= cutoff_date:
+                if save_query:
+                    yield result, query
+                else:
+                    yield result, None
+    except prawcore.exceptions.NotFound:
+        return []
 
     
 def get_posts_comments(
+    client,
     posts, 
     days_back=30
     ) -> list[praw.models.Comment]:
@@ -145,20 +154,23 @@ def get_posts_comments(
         try:
             post.comments.replace_more(limit=None)
             _comments = post.comments.list()
-            for comment in _comments:
-                if isinstance(comment, praw.models.MoreComments):
-                    print(comment.comments().__dict__)
-                    continue
-                comment_date = datetime.utcfromtimestamp(comment.created_utc)
-                if comment_date < cutoff_date:
-                    continue
-                comments.append(comment)  # Return raw comment object
+            try:
+                for comment in _comments:
+                    if isinstance(comment, praw.models.MoreComments):
+                        print(comment.comments().__dict__)
+                        continue
+                    comment_date = datetime.utcfromtimestamp(comment.created_utc)
+                    if comment_date < cutoff_date:
+                        continue
+                        comments.append(comment)  # Return raw comment object
+            except prawcore.exceptions.NotFound:
+                continue
         except Exception as e:
             print(f"Error processing comments for post {post.id}: {e}")
     return comments
 
 def get_user(
-    reddit, 
+    client, 
     username
     ) -> praw.models.Redditor:
     """
@@ -170,7 +182,7 @@ def get_user(
         praw.models.Redditor: The Reddit user object.
     """
     try:
-        user = reddit.redditor(username)
+        user = client.redditor(username)
         # Optionally, trigger a fetch to ensure the user exists (raises exception if not)
         _ = user.id
         return user
@@ -180,6 +192,7 @@ def get_user(
 
 
 def get_user_posts(
+    client,
     user, 
     num_posts=10, 
     sort_by='new'
