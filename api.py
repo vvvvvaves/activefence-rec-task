@@ -2,14 +2,16 @@ import praw
 import os
 from dotenv import load_dotenv
 import json
-
+from utils import get_targeting_data, to_dict
+import random
+from datetime import datetime, timedelta
 load_dotenv()
 CLIENT_ID = os.getenv('CLIENT_ID')
 CLIENT_SECRET = os.getenv('CLIENT_SECRET')
 USERNAME = os.getenv('USERNAME')
 USER_AGENT = f'script:afrt:v1.0 (by u/{USERNAME})'
 
-def get_client():
+def get_client() -> praw.Reddit:
     """
     Create and return a Reddit client instance using PRAW and environment variables.
     
@@ -30,7 +32,12 @@ def get_client():
 
 reddit = get_client()
 
-def get_subreddit_posts(subreddit_name, num_posts=10, sort_by='hot', days_back=None):
+def get_subreddit_posts(
+    subreddit_name, 
+    num_posts=10, 
+    sort_by='hot', 
+    days_back=None
+    ) -> list[praw.models.Submission]:
     """
     Fetch posts from a subreddit with sorting option and optional days_back filter.
     Only fetches and filters posts; does not do any metrics or preprocessing.
@@ -43,7 +50,6 @@ def get_subreddit_posts(subreddit_name, num_posts=10, sort_by='hot', days_back=N
     Output:
         list of praw.models.Submission: List of Reddit post objects matching the criteria.
     """
-    from datetime import datetime, timedelta
     subreddit = reddit.subreddit(subreddit_name)
     if sort_by == 'hot':
         posts = subreddit.hot(limit=num_posts)
@@ -65,7 +71,11 @@ def get_subreddit_posts(subreddit_name, num_posts=10, sort_by='hot', days_back=N
         posts = filtered_posts
     return list(posts)
 
-def search_reddit_posts(query, num_posts=10, sort_by='relevance'):
+def search_reddit_posts(
+    query, 
+    num_posts=10, 
+    sort_by='relevance'
+    ) -> list[praw.models.Submission]:
     """
     Search Reddit posts across all subreddits using a query string.
     
@@ -79,7 +89,14 @@ def search_reddit_posts(query, num_posts=10, sort_by='relevance'):
     results = reddit.subreddit('all').search(query, sort=sort_by, limit=num_posts)
     return list(results)
 
-def search_subreddit_posts(subreddit_name, query, num_posts=10, sort_by='relevance'):
+def search_subreddit_posts(
+    subreddit_name, 
+    query, 
+    num_posts=10, 
+    days_back=99999, 
+    sort_by='relevance', 
+    save_query=False,
+    ) -> tuple[list[praw.models.Submission], str|None]:
     """
     Search posts within a specific subreddit using a query string.
     
@@ -92,10 +109,24 @@ def search_subreddit_posts(subreddit_name, query, num_posts=10, sort_by='relevan
         list of praw.models.Submission: List of Reddit post objects matching the search.
     """
     subreddit = reddit.subreddit(subreddit_name)
-    results = subreddit.search(query, sort=sort_by, limit=num_posts)
-    return list(results)
-
-def get_posts_comments(posts, days_back=30):
+    results = subreddit.search(query, sort=sort_by, limit=num_posts, time_filter='all')
+    if days_back is not None:
+        cutoff_date = datetime.utcnow() - timedelta(days=days_back)
+        filtered_results = []
+        for result in results:
+            result_date = datetime.utcfromtimestamp(result.created_utc)
+            if result_date >= cutoff_date:
+                filtered_results.append(result)
+        results = filtered_results
+    if save_query:
+        return list(results), query
+    else:
+        return list(results), None
+    
+def get_posts_comments(
+    posts, 
+    days_back=30
+    ) -> list[praw.models.Comment]:
     """
     Fetch raw comment objects for a given post or list of posts, filtered by days_back.
     
@@ -105,7 +136,6 @@ def get_posts_comments(posts, days_back=30):
     Output:
         list of praw.models.Comment: List of raw Reddit comment objects (not processed dicts) matching the filter.
     """
-    from datetime import datetime, timedelta
     if not isinstance(posts, list):
         posts = [posts]
     comments = []
@@ -126,7 +156,10 @@ def get_posts_comments(posts, days_back=30):
             print(f"Error processing comments for post {post.id}: {e}")
     return comments
 
-def get_user(reddit, username):
+def get_user(
+    reddit, 
+    username
+    ) -> praw.models.Redditor:
     """
     Fetch a Reddit user object using PRAW.
     
@@ -145,7 +178,11 @@ def get_user(reddit, username):
         return None
 
 
-def get_user_posts(user, num_posts=10, sort_by='new'):
+def get_user_posts(
+    user, 
+    num_posts=10, 
+    sort_by='new'
+    ) -> list[praw.models.Submission]:
     """
     Fetch posts (submissions) made by a Reddit user.
     

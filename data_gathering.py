@@ -9,15 +9,60 @@ from api import (
     get_user_posts)
 from utils import get_targeting_data, to_dict, save_json
 from tqdm import tqdm
+import random
+import praw
 
 NUM_POSTS = 200
 DAYS_BACK = 99999
 
+def rotate_search_subreddit_posts(
+    subreddit_name, 
+    num_posts=10, days_back=99999, 
+    sort_by='new', save_query=False
+): 
+
+    search_terms = get_targeting_data()['search_terms']
+    search_terms_neutral = get_targeting_data()['search_terms_neutral']
+
+    neg_rand_index = random.randint(0, len(search_terms) - 1)
+    neut_rand_index = random.randint(0, len(search_terms_neutral) - 1)
+
+    query = f"{search_terms[neg_rand_index]} {search_terms_neutral[neut_rand_index]}"
+
+    # all_posts = []
+    while len(all_posts) < num_posts:
+        # print(f"Post index: {len(all_posts)}")
+        random_neg = random.choice(search_terms)
+        random_neut = random.choice(search_terms_neutral)
+        query = f"{random_neg} {random_neut}"
+        posts, query = search_subreddit_posts(
+            subreddit_name=subreddit_name, 
+            query=query, 
+            num_posts=1, 
+            days_back=days_back, 
+            sort_by=sort_by, 
+            save_query=save_query
+            )
+        print(f"Posts: {len(posts)}")
+        if len(posts) > 1:
+            # all_posts.extend((posts, query))
+            for _post in posts:
+                yield _post, query
+        elif len(posts) == 1 and isinstance(posts, list):
+            # all_posts.append((posts[0], query))
+            yield posts[0], query
+        else:
+            continue
+    # return all_posts
+
 def continuously_gather_data(_func, subreddit_name, progress_bar, *args, **kwargs):
-    posts = _func(subreddit_name=subreddit_name, *args, **kwargs)
-    for post in posts:
+    all_posts = _func(subreddit_name=subreddit_name, *args, **kwargs)
+    for post, query in all_posts:
         comments = get_posts_comments(post)
-        posts_dict = to_dict([post])
+        posts_dict = to_dict(post)
+        if kwargs.get('save_query', False):
+            for i in range(len(posts_dict)):
+                posts_dict[i]['query'] = query
         post_timestamp = post.created
         post_id = post.id
         comments_dict = to_dict(comments)
@@ -46,7 +91,16 @@ def main():
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = [
-            executor.submit(continuously_gather_data, get_subreddit_posts, x, progress_bars[i], num_posts=NUM_POSTS, days_back=DAYS_BACK)
+            executor.submit(
+                continuously_gather_data, 
+                rotate_search_subreddit_posts, 
+                x, 
+                progress_bars[i], 
+                num_posts=NUM_POSTS, 
+                days_back=DAYS_BACK, 
+                sort_by='new', 
+                save_query=True
+                )
             for i, x in enumerate(subreddits)
         ]
         try:
