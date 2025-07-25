@@ -3,6 +3,7 @@ import time
 from tqdm import tqdm
 from datetime import datetime
 from api import get_client, get_posts_comments, search_subreddit_posts
+from llm.perspective_api import get_client as get_perspective_client, get_perspective_api_score, clean_response_flat
 from utils import get_targeting_data, to_dict, save_json
 import random
 import os
@@ -23,20 +24,18 @@ perspective_RL_lock = threading.Lock()
 
 NUM_POSTS = 200
 DAYS_BACK = 99999
-
+POSTS_PER_QUERY = 40
 
 # Worker function for each subreddit
 def worker(subreddit_name, progress_bar):
     client = get_client()
+    perspective_client = get_perspective_client()
     search_terms = get_targeting_data()['search_terms']
     search_terms_neutral = get_targeting_data()['search_terms_neutral']
     posts_collected = 0
-    while posts_collected < NUM_POSTS:
-        num_posts_per_query = min(20, NUM_POSTS - posts_collected)
-        random_neg = random.choice(search_terms)
-        random_neut = random.choice(search_terms_neutral)
-        query = f"{random_neg} {random_neut}"
-        generator = search_subreddit_posts(
+
+    def get_posts(query, num_posts_per_query):
+        return search_subreddit_posts(
             client,
             subreddit_name=subreddit_name,
             query=query,
@@ -45,16 +44,58 @@ def worker(subreddit_name, progress_bar):
             sort_by='new',
             save_query=True
         )
+
+    def get_comments(post):
+        return get_posts_comments(client, post)
+
+    def clean_post(post, query):
+        post_dict = to_dict(post)[0]
+        post_dict['query'] = query
+        return post_dict
+
+    def clean_comments(comments, query):
+        comments_dict = to_dict(comments)
+        for comment in comments_dict:
+            comment['query'] = query
+        return comments_dict
+
+    def score_with_perspective(text):
+        return clean_response_flat(get_perspective_api_score(perspective_client, text))
+
+    def add_perspective_to_post(post_dict):
+        text = post_dict['title'] + ' ' + post_dict['selftext']
+        perspective_scores = score_with_perspective(text)
+        if perspective_scores is not None:
+            post_dict.update(perspective_scores)
+        return post_dict
+
+    def add_perspective_to_comments(comments_dict):
+        for comment in comments_dict:
+            comment_text = comment['body']
+            comment_perspective_scores = score_with_perspective(comment_text)
+            if comment_perspective_scores is not None:
+                comment.update(comment_perspective_scores)
+        return comments_dict
+
+    def save_post_and_comments(post_dict, comments_dict, post_id, post_created):
+        save_json(post_dict, f"data/subreddits/{subreddit_name}/posts/post_{post_id}_{int(post_created)}.json")
+        save_json(comments_dict, f"data/subreddits/{subreddit_name}/comments/comments_{post_id}.json")
+
+    while posts_collected < NUM_POSTS:
+        num_posts_per_query = min(POSTS_PER_QUERY, NUM_POSTS - posts_collected)
+        random_neg = random.choice(search_terms)
+        random_neut = random.choice(search_terms_neutral)
+        query = f"{random_neg} {random_neut}"
+        generator = get_posts(query, num_posts_per_query)
         for post, _ in generator:
-            comments = get_posts_comments(client, post)
-            posts_dict = to_dict(post)
-            for i in range(len(posts_dict)):
-                posts_dict[i]['query'] = query
-            post_timestamp = post.created
-            post_id = post.id
-            comments_dict = to_dict(comments)
-            save_json(posts_dict, f"data/subreddits/{subreddit_name}/posts/post_{post_id}_{int(post_timestamp)}.json")
-            save_json(comments_dict, f"data/subreddits/{subreddit_name}/comments/comments_{post_id}.json")
+            comments = get_comments(post)
+            post_dict = clean_post(post, query)
+            post_created = post_dict['created']
+            post_id = post_dict['id']
+            # post_dict = add_perspective_to_post(post_dict)
+            comments_dict = clean_comments(comments, query)
+            # comments_dict = add_perspective_to_comments(comments_dict)
+            save_post_and_comments(post_dict, comments_dict, post_id, post_created)
             progress_bar.update(1)
             posts_collected += 1
             # Update the shared rate limit info

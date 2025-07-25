@@ -5,7 +5,7 @@ import copy
 import praw
 from typing import Generator
 
-def to_dict(objects):
+def to_dict(objects, clean=True):
     """
     Convert a list of objects to a list of dicts using the .d_ attribute.
     
@@ -18,22 +18,16 @@ def to_dict(objects):
         objects = list(objects)
 
     if isinstance(objects, list):
-        return [copy.deepcopy(obj).__dict__ for obj in objects]
+        objects_dict = [copy.deepcopy(obj).__dict__ for obj in objects]
     else:
-        return [copy.deepcopy(objects).__dict__]
+        objects_dict = [copy.deepcopy(objects).__dict__]
+    
+    if clean:
+        return clean_dict(objects_dict)
+    else:
+        return objects_dict
 
-def save_json(data, filename, clean=True):
-    """
-    Save data to a JSON file.
-
-    Input:
-        data (list of dict): List of dictionaries to save.
-        filename (str): Path to the JSON file to write.
-    Output:
-        None. Writes data to the specified JSON file.
-    """
-    os.makedirs(os.path.dirname(filename), exist_ok=True)
-
+def clean_dict(data):
     non_serializable = ['_replies', '_submission', '_reddit', '_comments', 'selftext_html']
 
     for i, d in enumerate(data):
@@ -54,38 +48,38 @@ def save_json(data, filename, clean=True):
             _comments_by_id = d.pop('_comments_by_id')
             data[i]['_comments_by_id'] = list(_comments_by_id.keys())
 
-    if clean:
-        retain_keys = [
-            'subreddit', 
-            'selftext', 
-            'title', 
-            'query',
-            "_comments_by_id",
-            "author",
-            "created",
-            "id",
-            "score",
-            'upvote_ratio',
-            "url",
-            'author_is_blocked',
-            'over_18',
-            'parent_id',
-            'body',
-            'controversiality',
-            'ups',
-            'downs'
-        ]
+    retain_keys = [
+        'subreddit', 
+        'selftext', 
+        'title', 
+        'query',
+        "_comments_by_id",
+        "author",
+        "created",
+        "id",
+        "score",
+        'upvote_ratio',
+        "url",
+        'author_is_blocked',
+        'over_18',
+        'parent_id',
+        'body',
+        'controversiality',
+        'ups',
+        'downs'
+    ]
 
-        requested_attributes = get_targeting_data()['requestedAttributes']
-        clean_data = []
-        for d in data:
-            clean_data.append({k: v for k, v in d.items() if k in retain_keys or k in requested_attributes.keys()})
+    requested_attributes = get_targeting_data()['requestedAttributes']
+    clean_data = []
+    for d in data:
+        clean_data.append({k: v for k, v in d.items() if k in retain_keys or k in requested_attributes.keys()})
 
-        with open(filename, 'w', encoding='utf-8') as f:
-            json.dump(clean_data, f, indent=4)
-    else:
-        with open(filename, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=4)
+    return clean_data
+
+def save_json(data_dict, filename):
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
+    with open(filename, 'w', encoding='utf-8') as f:
+        json.dump(data_dict, f, indent=4)
 
 def get_targeting_data():
     with open('targeting.json', 'r', encoding='utf-8') as f:

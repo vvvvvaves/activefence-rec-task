@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 from collections import OrderedDict
 from utils import get_targeting_data
+from googleapiclient.errors import HttpError
 load_dotenv()
 
 PERSPECTIVE_API_KEY = os.getenv('PERSPECTIVE_API_KEY')
@@ -26,10 +27,20 @@ def get_perspective_api_score(client, text):
         'spanAnnotations': True,
         'requestedAttributes': requestedAttributes
     }
-    response = client.comments().analyze(body=analyze_request).execute()
+    try:
+        response = client.comments().analyze(body=analyze_request).execute()
+    except HttpError as e:
+        if e.resp.status == 429:
+            raise e
+        elif e.resp.status == 400:
+            return None # Bad request, most likely due to unknown language
+        else:
+            raise e
     return response
 
 def clean_response(text, response):
+    if response is None:
+        return None
     sorted_scores = OrderedDict()
     for attribute, score in response['attributeScores'].items():
         sorted_scores[attribute] = OrderedDict()
@@ -52,6 +63,8 @@ def clean_response(text, response):
     }
 
 def clean_response_flat(response):
+  if response is None:
+    return None
   output = {}
   output['languages'] = ', '.join(response['languages'])
   output['detected_languages'] = ', '.join(response['detectedLanguages'])

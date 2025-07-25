@@ -229,30 +229,6 @@
         "THREAT": {
           "scoreType": "PROBABILITY"
         },
-        "TOXICITY_EXPERIMENTAL": {
-          "scoreType": "PROBABILITY"
-        },
-        "SEXUALLY_EXPLICIT": {
-          "scoreType": "PROBABILITY"
-        },
-        "FLIRTATION": {
-        "scoreType": "PROBABILITY"
-        },
-        "SEXUALLY_EXPLICIT_EXPERIMENTAL": {
-          "scoreType": "PROBABILITY"
-        },
-        "IDENTITY_ATTACK_EXPERIMENTAL": {
-          "scoreType": "PROBABILITY"
-        },
-        "INSULT_EXPERIMENTAL": {
-        "scoreType": "PROBABILITY"
-        },
-        "PROFANITY_EXPERIMENTAL": {
-          "scoreType": "PROBABILITY"
-        },
-        "THREAT_EXPERIMENTAL": {
-          "scoreType": "PROBABILITY"
-        },
         "ATTACK_ON_AUTHOR": {
           "scoreType": "PROBABILITY"
         },
