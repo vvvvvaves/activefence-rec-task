@@ -1,6 +1,7 @@
 *.pdf
 .env
-/__pycache__/
+__pycache__/
+*/__pycache__/
 /data/subreddits/
 try.py
 test.py

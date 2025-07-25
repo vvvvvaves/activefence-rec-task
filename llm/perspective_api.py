@@ -4,6 +4,7 @@ import json
 import os
 from dotenv import load_dotenv
 from collections import OrderedDict
+from utils import get_targeting_data
 load_dotenv()
 
 PERSPECTIVE_API_KEY = os.getenv('PERSPECTIVE_API_KEY')
@@ -19,62 +20,11 @@ def get_client():
     return client
 
 def get_perspective_api_score(client, text):
+    requestedAttributes = get_targeting_data()['requestedAttributes']
     analyze_request = {
         'comment': { 'text': text },
         'spanAnnotations': True,
-        'requestedAttributes': {
-            'TOXICITY': {
-              'scoreType': 'PROBABILITY',
-            }, 
-            'SEVERE_TOXICITY': {
-              'scoreType': 'PROBABILITY',
-            }, 
-            'IDENTITY_ATTACK': {
-              'scoreType': 'PROBABILITY',
-            }, 
-            'INSULT': {
-              'scoreType': 'PROBABILITY',
-            }, 
-            'PROFANITY': {
-              'scoreType': 'PROBABILITY',
-            }, 
-            'THREAT': {
-              'scoreType': 'PROBABILITY',
-            },
-            'TOXICITY_EXPERIMENTAL': {
-              'scoreType': 'PROBABILITY',
-            },
-            'SEXUALLY_EXPLICIT': {
-              'scoreType': 'PROBABILITY',
-            },
-            'FLIRTATION': {
-              'scoreType': 'PROBABILITY',
-            },
-            'SEXUALLY_EXPLICIT_EXPERIMENTAL': {
-              'scoreType': 'PROBABILITY',
-            },
-            'IDENTITY_ATTACK_EXPERIMENTAL': {
-              'scoreType': 'PROBABILITY',
-            },
-            'INSULT_EXPERIMENTAL': {
-              'scoreType': 'PROBABILITY',
-            },
-            'PROFANITY_EXPERIMENTAL': {
-              'scoreType': 'PROBABILITY',
-            },
-            'THREAT_EXPERIMENTAL': {
-              'scoreType': 'PROBABILITY',
-            },
-            'ATTACK_ON_AUTHOR': {
-              'scoreType': 'PROBABILITY',
-            },
-            'ATTACK_ON_COMMENTER': {
-              'scoreType': 'PROBABILITY',
-            },
-            'INFLAMMATORY': {
-              'scoreType': 'PROBABILITY',
-            },
-            }
+        'requestedAttributes': requestedAttributes
     }
     response = client.comments().analyze(body=analyze_request).execute()
     return response
@@ -101,8 +51,22 @@ def clean_response(text, response):
       'detected_languages': response['detectedLanguages'],
     }
 
+def clean_response_flat(response):
+  output = {}
+  output['languages'] = ', '.join(response['languages'])
+  output['detected_languages'] = ', '.join(response['detectedLanguages'])
+  for attribute, data in response['attributeScores'].items():
+    # Sort spanScores by score value descending
+    spanScores = sorted(data['spanScores'], key=lambda item: item['score']['value'], reverse=True)
+    output.update({
+      f'{attribute}_score': data['summaryScore']['value'],
+      f'{attribute}_max_span_begin': spanScores[0]['begin'],
+      f'{attribute}_max_span_end': spanScores[0]['end'],
+    })
+  return output
 
-client = get_client()
-text = 'Jews have too much control over the U.S. Government'
-response = get_perspective_api_score(client, text)
-print(json.dumps(clean_response(text, response), indent=4))
+if __name__ == '__main__':
+    client = get_client()
+    text = 'Jews have too much control over the U.S. Government'
+    response = get_perspective_api_score(client, text)
+    print(json.dumps(clean_response_flat(response), indent=4))

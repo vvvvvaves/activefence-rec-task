@@ -37,8 +37,8 @@ def get_subreddit_posts(
     subreddit_name, 
     num_posts=10, 
     sort_by='hot', 
-    days_back=None
-    ) -> list[praw.models.Submission]:
+    days_back=9999
+    ) -> Generator[praw.models.Submission, None, None]:
     """
     Fetch posts from a subreddit with sorting option and optional days_back filter.
     Only fetches and filters posts; does not do any metrics or preprocessing.
@@ -62,25 +62,25 @@ def get_subreddit_posts(
         posts = subreddit.rising(limit=num_posts)
     else:
         raise ValueError("Invalid sort_by value. Use 'hot', 'new', 'top', or 'rising'.")
+    
+    cutoff_date = None
     if days_back is not None:
         cutoff_date = datetime.utcnow() - timedelta(days=days_back)
-        filtered_posts = []
-        try:
-            for post in posts:
-                post_date = datetime.utcfromtimestamp(post.created_utc)
-                if post_date >= cutoff_date:
-                        filtered_posts.append(post)
-                posts = filtered_posts
-        except prawcore.exceptions.NotFound:
-            return []
-    return list(posts)
+    
+    try:
+        for post in posts:
+            post_date = datetime.utcfromtimestamp(post.created_utc)
+            if cutoff_date is None or post_date >= cutoff_date:
+                yield post
+    except prawcore.exceptions.NotFound:
+        return []
 
 def search_reddit_posts(
     client,
     query, 
     num_posts=10, 
     sort_by='relevance'
-    ) -> list[praw.models.Submission]:
+    ) -> Generator[praw.models.Submission, None, None]:
     """
     Search Reddit posts across all subreddits using a query string.
     
@@ -92,14 +92,18 @@ def search_reddit_posts(
         list of praw.models.Submission: List of Reddit post objects matching the search.
     """
     results = client.subreddit('all').search(query, sort=sort_by, limit=num_posts)
-    return list(results)
+    try:
+        for result in results:
+            yield result
+    except prawcore.exceptions.NotFound:
+        return []
 
 def search_subreddit_posts(
     client,
     subreddit_name, 
     query, 
     num_posts=10, 
-    days_back=99999, 
+    days_back=9999, 
     sort_by='relevance', 
     save_query=False,
     ) -> Generator[praw.models.Submission, None, None]:
@@ -135,20 +139,20 @@ def search_subreddit_posts(
 def get_posts_comments(
     client,
     posts, 
-    days_back=30
-    ) -> list[praw.models.Comment]:
+    days_back=9999
+    ) -> Generator[praw.models.Comment, None, None]:
     """
     Fetch raw comment objects for a given post or list of posts, filtered by days_back.
     
     Input:
-        posts (praw.models.Submission or list of praw.models.Submission): Single post object or list of post objects.
+        posts (praw.models.Submission or Generator[praw.models.Submission, None, None]): Single post object or list of post objects.
         days_back (int, optional): Only comments from the last 'days_back' days are returned. Default is 30.
     Output:
         list of praw.models.Comment: List of raw Reddit comment objects (not processed dicts) matching the filter.
     """
-    if not isinstance(posts, list):
+    if not isinstance(posts, Generator):
         posts = [posts]
-    comments = []
+
     for post in posts:
         cutoff_date = datetime.utcnow() - timedelta(days=days_back)
         try:
@@ -157,17 +161,17 @@ def get_posts_comments(
             try:
                 for comment in _comments:
                     if isinstance(comment, praw.models.MoreComments):
-                        print(comment.comments().__dict__)
                         continue
                     comment_date = datetime.utcfromtimestamp(comment.created_utc)
                     if comment_date < cutoff_date:
                         continue
-                        comments.append(comment)  # Return raw comment object
+                    else:
+                        yield comment
             except prawcore.exceptions.NotFound:
                 continue
         except Exception as e:
             print(f"Error processing comments for post {post.id}: {e}")
-    return comments
+            return []
 
 def get_user(
     client, 
@@ -196,7 +200,7 @@ def get_user_posts(
     user, 
     num_posts=10, 
     sort_by='new'
-    ) -> list[praw.models.Submission]:
+    ) -> Generator[praw.models.Submission, None, None]:
     """
     Fetch posts (submissions) made by a Reddit user.
     
@@ -217,4 +221,8 @@ def get_user_posts(
         posts = user.submissions.controversial(limit=num_posts)
     else:
         raise ValueError("Invalid sort_by value. Use 'new', 'hot', 'top', or 'controversial'.")
-    return list(posts)
+    try:    
+        for post in posts:
+            yield post
+    except prawcore.exceptions.NotFound:
+        return []

@@ -209,6 +209,59 @@
         "peace process",
         "two state solution",
         "one state solution"
-    ]
+    ],
+    "requestedAttributes": {
+        "TOXICITY": {
+          "scoreType": "PROBABILITY"
+        }, 
+        "SEVERE_TOXICITY": {
+          "scoreType": "PROBABILITY"
+        }, 
+        "IDENTITY_ATTACK": {
+          "scoreType": "PROBABILITY"
+        }, 
+        "INSULT": {
+          "scoreType": "PROBABILITY"
+        }, 
+        "PROFANITY": {
+          "scoreType": "PROBABILITY"
+        }, 
+        "THREAT": {
+          "scoreType": "PROBABILITY"
+        },
+        "TOXICITY_EXPERIMENTAL": {
+          "scoreType": "PROBABILITY"
+        },
+        "SEXUALLY_EXPLICIT": {
+          "scoreType": "PROBABILITY"
+        },
+        "FLIRTATION": {
+        "scoreType": "PROBABILITY"
+        },
+        "SEXUALLY_EXPLICIT_EXPERIMENTAL": {
+          "scoreType": "PROBABILITY"
+        },
+        "IDENTITY_ATTACK_EXPERIMENTAL": {
+          "scoreType": "PROBABILITY"
+        },
+        "INSULT_EXPERIMENTAL": {
+        "scoreType": "PROBABILITY"
+        },
+        "PROFANITY_EXPERIMENTAL": {
+          "scoreType": "PROBABILITY"
+        },
+        "THREAT_EXPERIMENTAL": {
+          "scoreType": "PROBABILITY"
+        },
+        "ATTACK_ON_AUTHOR": {
+          "scoreType": "PROBABILITY"
+        },
+        "ATTACK_ON_COMMENTER": {
+          "scoreType": "PROBABILITY"
+        },
+        "INFLAMMATORY": {
+          "scoreType": "PROBABILITY"
+        }
+    }
     
 }

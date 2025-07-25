@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 import copy
 import praw
+from typing import Generator
 
 def to_dict(objects):
     """
@@ -13,17 +14,18 @@ def to_dict(objects):
     Output:
         list of dict: List of dictionaries representing the post data (using .d_ attribute).
     """
+    if isinstance(objects, Generator):
+        objects = list(objects)
+
     if isinstance(objects, list):
         return [copy.deepcopy(obj).__dict__ for obj in objects]
     else:
         return [copy.deepcopy(objects).__dict__]
 
-def save_json(data, filename):
+def save_json(data, filename, clean=True):
     """
     Save data to a JSON file.
 
-    Deletes non-serializable keys and stores dictionary of {"comment_id": Comment} as list of comment_ids.
-    
     Input:
         data (list of dict): List of dictionaries to save.
         filename (str): Path to the JSON file to write.
@@ -31,7 +33,9 @@ def save_json(data, filename):
         None. Writes data to the specified JSON file.
     """
     os.makedirs(os.path.dirname(filename), exist_ok=True)
+
     non_serializable = ['_replies', '_submission', '_reddit', '_comments', 'selftext_html']
+
     for i, d in enumerate(data):
         for key in non_serializable:
             if key in d.keys():
@@ -49,10 +53,39 @@ def save_json(data, filename):
         if '_comments_by_id' in d.keys():
             _comments_by_id = d.pop('_comments_by_id')
             data[i]['_comments_by_id'] = list(_comments_by_id.keys())
-       
-    
-    with open(filename, 'w', encoding='utf-8') as f:
-        json.dump(data, f, indent=4)
+
+    if clean:
+        retain_keys = [
+            'subreddit', 
+            'selftext', 
+            'title', 
+            'query',
+            "_comments_by_id",
+            "author",
+            "created",
+            "id",
+            "score",
+            'upvote_ratio',
+            "url",
+            'author_is_blocked',
+            'over_18',
+            'parent_id',
+            'body',
+            'controversiality',
+            'ups',
+            'downs'
+        ]
+
+        requested_attributes = get_targeting_data()['requestedAttributes']
+        clean_data = []
+        for d in data:
+            clean_data.append({k: v for k, v in d.items() if k in retain_keys or k in requested_attributes.keys()})
+
+        with open(filename, 'w', encoding='utf-8') as f:
+            json.dump(clean_data, f, indent=4)
+    else:
+        with open(filename, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=4)
 
 def get_targeting_data():
     with open('targeting.json', 'r', encoding='utf-8') as f:
