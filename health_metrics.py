@@ -233,25 +233,3 @@ def save_health_summary_markdown(metrics, subreddit_name, filename):
     lines.append(f"- **Mod Comments:** {mod_stats.get('mod_comments', 0)}")
     with open(filename, 'w', encoding='utf-8') as f:
         f.write('\n'.join(lines))
-
-def assess_community_health(reddit, subreddit_name, num_posts=100, days_back=30):
-    """
-    High-level function to assess and summarize community health for a subreddit.
-    
-    Input:
-        reddit (praw.Reddit): Authenticated Reddit client instance.
-        subreddit_name (str): Name of the subreddit (e.g., 'python').
-    Output:
-        None. Prints summary to stdout and saves markdown summary to file.
-    """
-    posts = get_subreddit_posts(subreddit_name, num_posts=num_posts, days_back=days_back, sort_by='new')
-    comments = get_posts_comments(posts)
-    posts_dict = to_dict(posts)
-    comments_dict = to_dict(comments)
-    metrics = get_community_health_metrics(posts_dict, comments_dict)
-    print_health_summary(metrics, subreddit_name)
-    save_json(posts_dict, f"data/subreddits/{subreddit_name}/posts_raw.json")
-    save_json(comments_dict, f"data/subreddits/{subreddit_name}/comments_raw.json")
-    save_health_summary_markdown(metrics, subreddit_name, f"data/subreddits/{subreddit_name}/health_metrics.md")
-
-

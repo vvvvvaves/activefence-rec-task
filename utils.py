@@ -2,6 +2,7 @@ import json
 import os
 from datetime import datetime
 import copy
+import praw
 
 def to_dict(objects):
     """
@@ -40,7 +41,7 @@ def save_json(data, filename):
             d['subreddit'] = d['subreddit'].display_name
 
         if 'author' in d.keys():
-            d['author'] = d['author'].name
+            d['author'] = d['author'].name if isinstance(d['author'], praw.models.Redditor) else d['author']
 
         if 'created_utc' in d.keys():
             d['created_utc'] = datetime.fromtimestamp(d['created_utc']).strftime('%Y-%m-%d %H:%M:%S')
@@ -49,6 +50,7 @@ def save_json(data, filename):
             _comments_by_id = d.pop('_comments_by_id')
             data[i]['_comments_by_id'] = list(_comments_by_id.keys())
        
+    
     with open(filename, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=4)
 

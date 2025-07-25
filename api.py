@@ -112,8 +112,12 @@ def get_posts_comments(posts, days_back=30):
     for post in posts:
         cutoff_date = datetime.utcnow() - timedelta(days=days_back)
         try:
+            post.comments.replace_more(limit=None)
             _comments = post.comments.list()
             for comment in _comments:
+                if isinstance(comment, praw.models.MoreComments):
+                    print(comment.comments().__dict__)
+                    continue
                 comment_date = datetime.utcfromtimestamp(comment.created_utc)
                 if comment_date < cutoff_date:
                     continue
