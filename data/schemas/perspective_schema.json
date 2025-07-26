@@ -1,0 +1,103 @@
+{
+    "properties": {
+        "perspective_id": {
+            "type": "string"
+        },
+        "sheet_name": {
+            "type": "string"
+        },
+        "subreddit": {
+            "type": "string"
+        },
+        "id": {
+            "type": "string"
+        },
+        "languages": {
+            "type": "string"
+        },
+        "detected_languages": {
+            "type": "string"
+        },
+        "TOXICITY_score": {
+            "type": "number"
+        },
+        "TOXICITY_max_span_begin": {
+            "type": "number"
+        },
+        "TOXICITY_max_span_end": {
+            "type": "number"
+        },
+        "SEVERE_TOXICITY_score": {
+            "type": "number"
+        },
+        "SEVERE_TOXICITY_max_span_begin": {
+            "type": "number"
+        },
+        "SEVERE_TOXICITY_max_span_end": {
+            "type": "number"
+        },
+        "IDENTITY_ATTACK_score": {
+            "type": "number"
+        },
+        "IDENTITY_ATTACK_max_span_begin": {
+            "type": "number"
+        },
+        "IDENTITY_ATTACK_max_span_end": {
+            "type": "number"
+        },
+        "INSULT_score": {
+            "type": "number"
+        },
+        "INSULT_max_span_begin": {
+            "type": "number"
+        },
+        "INSULT_max_span_end": {
+            "type": "number"
+        },
+        "PROFANITY_score": {
+            "type": "number"
+        },
+        "PROFANITY_max_span_begin": {
+            "type": "number"
+        },
+        "PROFANITY_max_span_end": {
+            "type": "number"
+        },
+        "THREAT_score": {
+            "type": "number"
+        },
+        "THREAT_max_span_begin": {
+            "type": "number"
+        },
+        "THREAT_max_span_end": {
+            "type": "number"
+        },
+        "ATTACK_ON_AUTHOR_score": {
+            "type": "number"
+        },
+        "ATTACK_ON_AUTHOR_max_span_begin": {
+            "type": "number"
+        },
+        "ATTACK_ON_AUTHOR_max_span_end": {
+            "type": "number"
+        },
+        "ATTACK_ON_COMMENTER_score": {
+            "type": "number"
+        },
+        "ATTACK_ON_COMMENTER_max_span_begin": {
+            "type": "number"
+        },
+        "ATTACK_ON_COMMENTER_max_span_end": {
+            "type": "number"
+        },
+        "INFLAMMATORY_score": {
+            "type": "number"
+        },
+        "INFLAMMATORY_max_span_begin": {
+            "type": "number"
+        },
+        "INFLAMMATORY_max_span_end": {
+            "type": "number"
+        }
+    }
+}
