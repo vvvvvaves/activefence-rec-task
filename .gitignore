@@ -9,3 +9,5 @@ test.py
 /tests/tests/
 client_secrets.json
 token.json
+*.csv
+*.ipynb
