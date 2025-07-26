@@ -68,16 +68,69 @@ def read_spans(path, attribute, _df, _perspective_df):
     perspective_df.to_csv(path, index=False)
     return perspective_df
 
+def get_full_comment_context(comments_path, posts_path):
+    if os.path.exists(comments_path):
+        comments_df = pd.read_csv(comments_path)
+    else:
+        raise ValueError('File does not exist: ' + comments_path)
+    if os.path.exists(posts_path):
+        posts_df = pd.read_csv(posts_path)
+    else:
+        raise ValueError('File does not exist: ' + posts_path)
+
+    def get_context(comment_id):
+        row = comments_df[comments_df['id'] == comment_id]
+        row_author = list(row['author'])[0] if len(row['author']) > 0 else "[unknown]"
+        row_body = list(row['body'])[0] if len(row['body']) > 0 else "[not available]"
+        body_formatted = f"[User {row_author}]:\n{row_body}"
+        parent_id = list(row['parent_id'])[0] if len(row['parent_id']) > 0 else None
+        prefix = parent_id.split('_')[0] if parent_id is not None else None
+        parent_id = parent_id.split('_')[1] if parent_id is not None else None
+        if parent_id is None:
+            return body_formatted
+        elif prefix == 't3':
+            post_row = posts_df[posts_df['id'] == parent_id]
+            post_author = list(post_row['author'])[0] if len(post_row['author']) > 0 else "[unknown]"
+            post_title = list(post_row['title'])[0] if len(post_row['title']) > 0 else "[not available]"
+            post_body = list(post_row['selftext'])[0] if len(post_row['selftext']) > 0 else "[not available]"
+            post_formatted = f"[Post {post_title}, by User {post_author}]:\n{post_body}"
+            return post_formatted + "\n\n" + body_formatted
+        elif prefix == 't1':
+            parent_row = comments_df[comments_df['id'] == parent_id]
+            parent_formatted = get_context(parent_id)
+            return parent_formatted + "\n\n" + body_formatted
+    
+    comments_df['full_text_with_context'] = comments_df.apply(
+        lambda row: get_context(row['id']), axis=1
+    )
+    comments_df.to_csv(f'{comments_path[:-4]}_with_context.csv', index=False)
+    return comments_df
+
 if __name__ == '__main__':
     gsheets_api = get_gsheets_api()
     spreadsheet_id = gsheets_api['spreadsheet_id']
-    perspective_sheet_id = gsheets_api['perspective_sheet_id']
     comments_sheet_id = gsheets_api['comments_sheet_id']
+    posts_sheet_id = gsheets_api['posts_sheet_id']
     google_sheets_service = gsheets_api['google_sheets_service']
     comments_df = to_csv(path='comments.csv', service=google_sheets_service, spreadsheet_id=spreadsheet_id, sheet_id=comments_sheet_id)
-    perspectives_df = to_csv(path='perspectives.csv', service=google_sheets_service, spreadsheet_id=spreadsheet_id, sheet_id=perspective_sheet_id)
-    attribute = 'identity_attack'
-    df = comments_df
-    perspective_df = perspectives_df
-    perspective_df = read_spans('perspectives_identity_attack.csv', attribute, df, perspective_df)
-    print(perspective_df[['identity_attack_score', 'identity_attack_span']])
+    posts_df = to_csv(path='submissions.csv', service=google_sheets_service, spreadsheet_id=spreadsheet_id, sheet_id=posts_sheet_id)
+    comments_df = get_full_comment_context(comments_path='comments.csv', posts_path='submissions.csv')
+    print(comments_df['full_text_with_context'].iloc[0])
+    print('==================')
+    print(comments_df['full_text_with_context'].iloc[1])
+    print('==================')
+    print(comments_df['full_text_with_context'].iloc[2])
+    print('==================')
+    print(comments_df['full_text_with_context'].iloc[3])
+    print('==================')
+    print(comments_df['full_text_with_context'].iloc[4])
+    print('==================')
+    print(comments_df['full_text_with_context'].iloc[5])
+    print('==================')
+    print(comments_df['full_text_with_context'].iloc[6])
+    print('==================')
+    print(comments_df['full_text_with_context'].iloc[7])
+    print('==================')
+    print(comments_df['full_text_with_context'].iloc[8])
+    print('==================')
+    print(comments_df['full_text_with_context'].iloc[9])
