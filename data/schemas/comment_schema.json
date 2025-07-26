@@ -12,6 +12,9 @@
         "author": {
             "type": "string"
         },
+        "parent_id": {
+            "type": "string"
+        },
         "score": {
             "type": "number"
         },

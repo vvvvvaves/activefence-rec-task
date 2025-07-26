@@ -66,8 +66,8 @@ def clean_response_flat(response):
   if response is None:
     return None
   output = {}
-  output['languages'] = ', '.join(response['languages'])
-  output['detected_languages'] = ', '.join(response['detectedLanguages'])
+  output['languages'] = ' '.join(response['languages'])
+  output['detected_languages'] = ' '.join(response['detectedLanguages'])
   for attribute, data in response['attributeScores'].items():
     # Sort spanScores by score value descending
     spanScores = sorted(data['spanScores'], key=lambda item: item['score']['value'], reverse=True)

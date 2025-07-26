@@ -18,6 +18,7 @@ from submodules.google_api.google_sheets_api import (
 from utils import get_targeting_data, to_dict, save_json, get_gsheets_api
 import random
 import os
+import json
 
 NUM_POSTS = 200
 DAYS_BACK = 99999
@@ -34,7 +35,7 @@ COMMENTS_SHEET_ID = gsheets_api['comments_sheet_id']
 
 
 # Worker function for each subreddit
-def worker(subreddit_name, progress_bar):
+def worker(subreddit_name, progress_bar=None):
     client = get_client()
     perspective_client = get_perspective_client()
     search_terms = get_targeting_data()['search_terms']
@@ -94,31 +95,41 @@ def worker(subreddit_name, progress_bar):
     def save_posts_to_gsheets(posts_dict):
         add_rows_to_sheet(google_sheets_service, spreadsheet_id, POSTS_SHEET_ID, posts_dict, list(posts_dict[0].keys()))
 
-    while posts_collected < NUM_POSTS:
-        num_posts_per_query = min(POSTS_PER_QUERY, NUM_POSTS - posts_collected)
+    # Every API call requests N posts. 
+    # Some search terms return less than N posts because they are ineffective at targeting.
+    # In such cases, we do not want to waste time requesting more posts.
+    # Therefore, the count goes for number of posts REQUESTED, not number of posts COLLECTED.
+    posts_requested = 0
+    while posts_requested < NUM_POSTS:
+        num_posts_per_query = min(POSTS_PER_QUERY, NUM_POSTS - posts_requested)
         random_neg = random.choice(search_terms)
         random_neut = random.choice(search_terms_neutral)
         query = f"{random_neg} {random_neut}"
         generator = get_posts(query, num_posts_per_query)
+        time.sleep(REDDIT_RATE_LIMIT_SECONDS) # Sleep after every posts request
         posts_dict = []
+        all_comments_dict = []
         for post, _ in generator:
+            posts_requested += num_posts_per_query
             comments = get_comments(post)
+            time.sleep(REDDIT_RATE_LIMIT_SECONDS) # Sleep after every comments request
             post_dict = clean_post(post, query)
             post_created = post_dict['created']
             post_id = post_dict['id']
             comments_dict = clean_comments(comments, query)
-            save_post_and_comments(post_dict, comments_dict, post_id, post_created)
             if comments_dict:
-                save_comments_to_gsheets(comments_dict)
+                all_comments_dict.extend(comments_dict)
             posts_dict.append(post_dict)
-            progress_bar.update(1)
-            posts_collected += 1
-            time.sleep(REDDIT_RATE_LIMIT_SECONDS)
-            if posts_collected >= NUM_POSTS:
+            if progress_bar:
+                progress_bar.update(num_posts_per_query)
+            if posts_requested >= NUM_POSTS:
                 break
         if posts_dict:
             save_posts_to_gsheets(posts_dict)
-    progress_bar.close()
+        if all_comments_dict:
+            save_comments_to_gsheets(all_comments_dict)
+    if progress_bar:
+        progress_bar.close()
 
 def main():
     subreddits = get_targeting_data()['subreddits']
