@@ -1,11 +1,13 @@
 {
-    "spreadsheet_id": "1TA0kD79pxmSHMzvSssCBKvBxpynHLQK4ttvpJNuF4vI",
-    "posts_sheet_id": 1530996868,
-    "comments_sheet_id": 1847145785,
+    "spreadsheet_id": "1xmLM5EZXcoG21vaMBPX0tKjjAbtvW4PYnBoglsrOpL4",
+    "posts_sheet_id": 627980292,
+    "comments_sheet_id": 5060356,
+    "perspective_sheet_id": 1681970181,
     "spreadsheet_name": "Data",
     "posts_sheet_name": "Posts",
     "comments_sheet_name": "Comments",
     "accounts_sheet_name": "Accounts",
+    "perspective_sheet_name": "Perspective",
     "subreddits": [
         "conspiracy",
         "worldnews",

@@ -35,6 +35,12 @@
         },
         "query": {
             "type": "string"
+        },
+        "perspective_id": {
+            "type": "string"
+        },
+        "custom_llm_id": {
+            "type": "string"
         }
     }
 }

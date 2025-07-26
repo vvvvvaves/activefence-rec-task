@@ -77,14 +77,19 @@ def clean_dict(data):
         'body',
         'controversiality',
         'ups',
-        'downs'
+        'downs',
+        'query',
+        'perspective_id',
+        'custom_llm_id'
     ]
 
-    # TODO: here its incorrect. requested attribute is not the full key, just a prefix.
-    requested_attributes = get_targeting_data()['requestedAttributes']
     clean_data = []
     for d in data:
-        clean_data.append({k: v for k, v in d.items() if k in retain_keys or k in requested_attributes.keys()})
+        d = {k: v for k, v in d.items() if k in retain_keys}
+        for key in ['query', 'perspective_id', 'custom_llm_id']:
+            if key not in d.keys():
+                d[key] = ""
+        clean_data.append(d)
 
     return clean_data
 
@@ -98,6 +103,7 @@ def get_targeting_data():
         return json.load(f)
 
 def get_gsheets_api():
+    from llm.perspective_api import get_perspective_schema
     targeting_data = get_targeting_data()
     google_credentials = get_credentials(client_secrets_path='client_secrets.json')
     google_sheets_service = get_sheets_service(google_credentials)
@@ -105,18 +111,22 @@ def get_gsheets_api():
         spreadsheet_id = create_sheet(google_sheets_service, targeting_data['spreadsheet_name'])
         posts_sheet_id = add_sheet_to_spreadsheet(google_sheets_service, spreadsheet_id, sheet_title=targeting_data['posts_sheet_name'])
         comments_sheet_id = add_sheet_to_spreadsheet(google_sheets_service, spreadsheet_id, sheet_title=targeting_data['comments_sheet_name'])
+        perspective_sheet_id = add_sheet_to_spreadsheet(google_sheets_service, spreadsheet_id, sheet_title=targeting_data['perspective_sheet_name'])
         create_table_from_schema(google_sheets_service, spreadsheet_id, sheet_id=posts_sheet_id, table_name=targeting_data['posts_sheet_name'], schema_path='data/schemas/post_schema.json')
+        create_table_from_schema(google_sheets_service, spreadsheet_id, sheet_id=perspective_sheet_id, table_name=targeting_data['perspective_sheet_name'], schema_path=get_perspective_schema())
         create_table_from_schema(google_sheets_service, spreadsheet_id, sheet_id=comments_sheet_id, table_name=targeting_data['comments_sheet_name'], schema_path='data/schemas/comment_schema.json')
         # create_table_from_schema(google_sheets_service, spreadsheet_id, sheet_id=2, table_name=targeting_data['accounts_sheet_name'], schema_path='data/schemas/account_schema.json')
         targeting_data['spreadsheet_id'] = spreadsheet_id
         targeting_data['posts_sheet_id'] = posts_sheet_id
         targeting_data['comments_sheet_id'] = comments_sheet_id
+        targeting_data['perspective_sheet_id'] = perspective_sheet_id
         with open('targeting.json', 'w', encoding='utf-8') as f:
             json.dump(targeting_data, f, indent=4)
     return {
         'google_sheets_service': google_sheets_service,
         'spreadsheet_id': targeting_data['spreadsheet_id'],
         'posts_sheet_id': targeting_data['posts_sheet_id'],
-        'comments_sheet_id': targeting_data['comments_sheet_id']
+        'comments_sheet_id': targeting_data['comments_sheet_id'],
+        'perspective_sheet_id': targeting_data['perspective_sheet_id']
     }
     

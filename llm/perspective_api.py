@@ -72,11 +72,43 @@ def clean_response_flat(response):
     # Sort spanScores by score value descending
     spanScores = sorted(data['spanScores'], key=lambda item: item['score']['value'], reverse=True)
     output.update({
-      f'{attribute}_score': data['summaryScore']['value'],
-      f'{attribute}_max_span_begin': spanScores[0]['begin'],
-      f'{attribute}_max_span_end': spanScores[0]['end'],
+      f'{attribute}_score'.lower(): data['summaryScore']['value'],
+      f'{attribute}_max_span_begin'.lower(): spanScores[0]['begin'],
+      f'{attribute}_max_span_end'.lower(): spanScores[0]['end'],
     })
   return output
+
+def get_perspective_schema():
+    requested_attributes = get_targeting_data()['requestedAttributes']
+    properties = {
+        "perspective_id": {
+          "type": "string"
+        },
+        "sheet_name": {
+          "type": "string"
+        },
+        "subreddit": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "languages": {
+          "type": "string"
+        },
+        "detected_languages": {
+          "type": "string"
+        }
+    }
+    for attribute, _ in requested_attributes.items():
+        for key in ['score', 'max_span_begin', 'max_span_end']:
+            properties[f'{attribute}_{key}'.lower()] = {
+                "type": "number"
+          }
+    schema = {
+      "properties": properties
+    }
+    return schema
 
 if __name__ == '__main__':
     client = get_client()
