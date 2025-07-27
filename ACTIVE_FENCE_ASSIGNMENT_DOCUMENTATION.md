@@ -483,3 +483,46 @@ The pipeline consists of five integrated stages:
 This anti-Semitism detection pipeline represents a comprehensive solution combining industry-standard tools with advanced AI capabilities. The system successfully addresses the core business requirements while maintaining scalability, accuracy, and ethical considerations. The modular architecture allows for future enhancements and adaptation to evolving requirements in hate speech detection and content moderation.
 
 The implementation demonstrates practical application of modern AI technologies for social good, providing a foundation for larger-scale deployment in content moderation and community safety applications.
+
+## 14. Sources and References
+
+### 14.1 Anti-Semitism Research and Guidelines
+
+**Antisemitism Policy Trust Anti-Semitism Glossary**
+
+- **URL**: https://antisemitism.org.uk/wp-content/uploads/2023/06/6847-Antisem-Glossary-2023-8-WEB-VERSION.pdf
+- **Description**: Comprehensive glossary of anti-Semitic terminology, tropes, and expressions used by the Antisemitism Policy Trust. This resource provides essential terminology for identifying both explicit and implicit anti-Semitic content in online spaces.
+
+**PLOS ONE Research on Implicit Online Hate Speech Detection**
+- **Title**: Hidden in plain sight: antisemitic content in QAnon subreddits
+- **URL**: https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0318988
+
+### 14.2 AI and Machine Learning Resources
+
+**Claude.ai**
+
+- **URL**: https://claude.ai
+
+**ArXiv Research on AI Safety and Content Moderation**
+- **Title**: Digital Guardians: Can GPT-4, Perspective API, and Moderation API reliably detect hate speech in reader comments of German online newspapers?
+- **URL**: https://arxiv.org/abs/2501.01256
+
+### 14.3 Google API Documentation
+
+**Google Perspective API Attributes**
+
+- **URL**: https://developers.perspectiveapi.com/s/about-the-api-attributes-and-languages?language=en_US
+
+**Google Perspective API Methods**
+
+- **URL**: https://developers.perspectiveapi.com/s/about-the-api-methods?language=en_US
+
+### 14.4 Google Gemini AI Documentation
+
+**Google Gemini API Prompting Strategies**
+
+- **URL**: https://ai.google.dev/gemini-api/docs/prompting-strategies
+
+**Google Gemini API Caching Documentation**
+
+- **URL**: https://ai.google.dev/gemini-api/docs/caching?lang=python
