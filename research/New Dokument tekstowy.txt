@@ -5,3 +5,5 @@ https://arxiv.org/abs/2501.01256
 
 Perspective API attributes: https://developers.perspectiveapi.com/s/about-the-api-attributes-and-languages?language=en_US
 Perspective API methods: https://developers.perspectiveapi.com/s/about-the-api-methods?language=en_US
+https://ai.google.dev/gemini-api/docs/prompting-strategies
+https://ai.google.dev/gemini-api/docs/caching?lang=python

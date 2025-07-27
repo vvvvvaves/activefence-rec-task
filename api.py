@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 import json
 from utils import get_targeting_data, to_dict
 import random
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Generator
 import prawcore
 load_dotenv()
@@ -65,11 +65,11 @@ def get_subreddit_posts(
     
     cutoff_date = None
     if days_back is not None:
-        cutoff_date = datetime.utcnow() - timedelta(days=days_back)
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_back)
     
     try:
         for post in posts:
-            post_date = datetime.utcfromtimestamp(post.created_utc)
+            post_date = datetime.fromtimestamp(post.created_utc, tz=timezone.utc)
             if cutoff_date is None or post_date >= cutoff_date:
                 yield post
     except prawcore.exceptions.NotFound:
@@ -122,11 +122,11 @@ def search_subreddit_posts(
     results = subreddit.search(query, sort=sort_by, limit=num_posts, time_filter='all')
     cutoff_date = None
     if days_back is not None:
-        cutoff_date = datetime.utcnow() - timedelta(days=days_back)
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_back)
     
     try:
         for result in results:
-            result_date = datetime.utcfromtimestamp(result.created_utc)
+            result_date = datetime.fromtimestamp(result.created_utc, tz=timezone.utc)
             if cutoff_date is None or result_date >= cutoff_date:
                 if save_query:
                     yield result, query
@@ -154,7 +154,7 @@ def get_posts_comments(
         posts = [posts]
 
     for post in posts:
-        cutoff_date = datetime.utcnow() - timedelta(days=days_back)
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_back)
         try:
             post.comments.replace_more(limit=None)
             _comments = post.comments.list()
@@ -162,7 +162,7 @@ def get_posts_comments(
                 for comment in _comments:
                     if isinstance(comment, praw.models.MoreComments):
                         continue
-                    comment_date = datetime.utcfromtimestamp(comment.created_utc)
+                    comment_date = datetime.fromtimestamp(comment.created_utc, tz=timezone.utc)
                     if comment_date < cutoff_date:
                         continue
                     else:
@@ -226,3 +226,109 @@ def get_user_posts(
             yield post
     except prawcore.exceptions.NotFound:
         return []
+
+
+def get_user_posts(
+    client,
+    user,
+    num_posts=10,
+    sort_by='new',
+    days_back=None
+) -> Generator[praw.models.Submission, None, None]:
+    """
+    Fetch posts (submissions) made by a Reddit user, with an optional cutoff date filter.
+    
+    Input:
+        client: praw.Reddit client instance.
+        user: Reddit username (str) or praw.models.Redditor object.
+        num_posts (int, optional): Number of posts to fetch. Default is 10.
+        sort_by (str, optional): Sorting method. One of 'new', 'hot', 'top', 'controversial'. Default is 'new'.
+        days_back (int, optional): Only posts from the last 'days_back' days are returned. Default is None (no filter).
+    Output:
+        Generator[praw.models.Submission, None, None]: Reddit post objects submitted by the user, filtered by cutoff date if provided.
+    """
+    if isinstance(user, str):
+        user = get_user(client, user)
+        if user is None:
+            return
+    if sort_by == 'new':
+        posts = user.submissions.new(limit=num_posts)
+    elif sort_by == 'hot':
+        posts = user.submissions.hot(limit=num_posts)
+    elif sort_by == 'top':
+        posts = user.submissions.top(limit=num_posts)
+    elif sort_by == 'controversial':
+        posts = user.submissions.controversial(limit=num_posts)
+    else:
+        raise ValueError("Invalid sort_by value. Use 'new', 'hot', 'top', or 'controversial'.")
+    cutoff_date = None
+    if days_back is not None:
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_back)
+    try:
+        for post in posts:
+            post_date = datetime.fromtimestamp(post.created_utc, tz=timezone.utc)
+            if cutoff_date is None or post_date >= cutoff_date:
+                yield post
+    except prawcore.exceptions.NotFound:
+        return []
+
+
+def get_user_comments(
+    client,
+    user,
+    num_comments=10,
+    sort_by='new',
+    days_back=None
+) -> Generator[praw.models.Comment, None, None]:
+    """
+    Fetch comments made by a Reddit user, with an optional cutoff date filter.
+    
+    Input:
+        client: praw.Reddit client instance.
+        user: Reddit username (str) or praw.models.Redditor object.
+        num_comments (int, optional): Number of comments to fetch. Default is 10.
+        sort_by (str, optional): Sorting method. One of 'new', 'hot', 'top', 'controversial'. Default is 'new'.
+        days_back (int, optional): Only comments from the last 'days_back' days are returned. Default is None (no filter).
+    Output:
+        Generator[praw.models.Comment, None, None]: Reddit comment objects made by the user, filtered by cutoff date if provided.
+    """
+    if isinstance(user, str):
+        user = get_user(client, user)
+        if user is None:
+            return
+    if sort_by == 'new':
+        comments = user.comments.new(limit=num_comments)
+    elif sort_by == 'hot':
+        comments = user.comments.hot(limit=num_comments)
+    elif sort_by == 'top':
+        comments = user.comments.top(limit=num_comments)
+    elif sort_by == 'controversial':
+        comments = user.comments.controversial(limit=num_comments)
+    else:
+        raise ValueError("Invalid sort_by value. Use 'new', 'hot', 'top', or 'controversial'.")
+    cutoff_date = None
+    if days_back is not None:
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_back)
+    try:
+        for comment in comments:
+            comment_date = datetime.fromtimestamp(comment.created_utc, tz=timezone.utc)
+            if cutoff_date is None or comment_date >= cutoff_date:
+                yield comment
+    except prawcore.exceptions.NotFound:
+        return []
+
+
+if __name__ == "__main__":
+    client = get_client()
+    username = "DaftVapour"
+    print(f"Testing get_user_posts for user: {username}")
+    posts = list(get_user_posts(client, username, num_posts=3, sort_by='new', days_back=30))
+    print(f"Number of posts retrieved: {len(posts)}")
+    for i, post in enumerate(posts, 1):
+        print(f"Post {i}: {post.title} (created: {datetime.fromtimestamp(post.created_utc, tz=timezone.utc)})")
+
+    print(f"\nTesting get_user_comments for user: {username}")
+    comments = list(get_user_comments(client, username, num_comments=3, sort_by='new', days_back=30))
+    print(f"Number of comments retrieved: {len(comments)}")
+    for i, comment in enumerate(comments, 1):
+        print(f"Comment {i}: {comment.body[:60]}... (created: {datetime.fromtimestamp(comment.created_utc, tz=timezone.utc)})")

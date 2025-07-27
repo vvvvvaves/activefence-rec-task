@@ -117,4 +117,4 @@ if __name__ == '__main__':
     comments_df = to_csv(path='comments_with_context.csv', service=google_sheets_service, spreadsheet_id=spreadsheet_id, sheet_id=comments_sheet_id).dropna(subset=['id'])
     for attribute in ['toxicity', 'severe_toxicity', 'threat', 'insult', 'profanity', 'identity_attack', 'inflammatory', 'attack_on_author', 'attack_on_commenter']:
         perspective_df = read_spans(attribute, comments_df, perspective_df, path=None)
-    perspective_df.to_csv('perspective_1000char_context_spans.csv', index=False)
+    perspective_df = find_highest_scores(path='perspective_1000char_context_spans.csv', df=comments_df, perspective_df=perspective_df)
