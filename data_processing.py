@@ -113,9 +113,8 @@ if __name__ == '__main__':
     perspective_sheet_id = gsheets_api['perspective_sheet_id']
     comments_sheet_id = gsheets_api['comments_sheet_id']
     google_sheets_service = gsheets_api['google_sheets_service']
-    perspective_df = to_csv(path='perspective_full_context.csv', service=google_sheets_service, spreadsheet_id=spreadsheet_id, sheet_id=perspective_sheet_id)
+    perspective_df = to_csv(path='perspective_1000char_context.csv', service=google_sheets_service, spreadsheet_id=spreadsheet_id, sheet_id=perspective_sheet_id)
     comments_df = to_csv(path='comments_with_context.csv', service=google_sheets_service, spreadsheet_id=spreadsheet_id, sheet_id=comments_sheet_id).dropna(subset=['id'])
-    perspective_df = perspective_df[perspective_df['sheet_name'] == 'comments']
     for attribute in ['toxicity', 'severe_toxicity', 'threat', 'insult', 'profanity', 'identity_attack', 'inflammatory', 'attack_on_author', 'attack_on_commenter']:
         perspective_df = read_spans(attribute, comments_df, perspective_df, path=None)
-    perspective_df.to_csv('perspective_full_context_spans.csv', index=False)
+    perspective_df.to_csv('perspective_1000char_context_spans.csv', index=False)

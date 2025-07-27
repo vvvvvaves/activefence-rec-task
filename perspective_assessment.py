@@ -109,7 +109,7 @@ def worker_from_csv(path, batch_size=BATCH_SIZE, start_row=START_ROW, context_si
                 body = str(row['title']) + '\n\n' + str(row['selftext'])
             if body is None:
                 continue
-            body = body[:context_size]
+            body = body[-context_size:] if comments else body[:context_size] # get user post and the comments they replied to, but for post get first n chars
             try:
                 response = get_perspective_api_score(perspective_client, body)
             except HttpError as e:
