@@ -7,6 +7,7 @@ import time
 from tqdm import tqdm
 import pandas as pd
 import argparse
+from googleapiclient.errors import HttpError
 
 CONTEXT_SIZE = 4000
 BATCH_SIZE = 100
@@ -76,7 +77,7 @@ def comments_worker_from_sheet(batch_size=BATCH_SIZE, start_row=START_ROW, conte
     assessment_bar.close()
     uploaded_bar.close()
 
-def comments_worker_from_csv(path, batch_size=BATCH_SIZE, start_row=START_ROW, context_size=CONTEXT_SIZE, comments=True):
+def worker_from_csv(path, batch_size=BATCH_SIZE, start_row=START_ROW, context_size=CONTEXT_SIZE, comments=True):
     gsheets_api = get_gsheets_api()
     spreadsheet_id = gsheets_api['spreadsheet_id']
     perspective_sheet_id = gsheets_api['perspective_sheet_id']
@@ -109,7 +110,14 @@ def comments_worker_from_csv(path, batch_size=BATCH_SIZE, start_row=START_ROW, c
             if body is None:
                 continue
             body = body[:context_size]
-            response = get_perspective_api_score(perspective_client, body)
+            try:
+                response = get_perspective_api_score(perspective_client, body)
+            except HttpError as e:
+                if e.status_code == 429:
+                    time.sleep(10)
+                    response = get_perspective_api_score(perspective_client, body)
+                else:
+                    raise e
             assessment_bar.update(1)
             assessment_bar.refresh()
             clean_response = clean_response_flat(response)
@@ -142,10 +150,10 @@ if __name__ == '__main__':
             context_size=args.context_size
         )
     elif args.mode == 'csv':
-        comments_worker_from_csv(
-            path=args.posts_path, 
+        worker_from_csv(
+            path=args.comments_path, 
             batch_size=args.batch_size, 
-            start_row=10, 
+            start_row=args.start_row, 
             context_size=args.context_size, 
-            comments=False
+            comments=True
         )

@@ -42,8 +42,8 @@ def find_highest_scores(path, df, perspective_df):
     perspective_df.to_csv(path, index=False)
     return perspective_df
 
-def read_spans(path, attribute, _df, _perspective_df):
-    if os.path.exists(path):
+def read_spans(attribute, _df, _perspective_df, path=None):
+    if path is not None and os.path.exists(path):
         return pd.read_csv(path)
     df = _df.copy()
     perspective_df = _perspective_df.copy()
@@ -51,7 +51,7 @@ def read_spans(path, attribute, _df, _perspective_df):
     df.sort_values(by='id', key=perspective_df['id'].reindex, na_position='last', inplace=True)
     perspective_df.sort_values(by='id', inplace=True)
     sheet_name = perspective_df['sheet_name'].iloc[0]
-    content_column_name = 'body' if sheet_name.lower() == 'comments' else 'selftext'
+    content_column_name = ('body' if 'full_text_with_context' not in df.columns else 'full_text_with_context') if sheet_name.lower() == 'comments' else 'selftext'
     begin_col = f'{attribute}_max_span_begin'
     end_col = f'{attribute}_max_span_end'
     df[begin_col] = perspective_df[begin_col]
@@ -65,7 +65,8 @@ def read_spans(path, attribute, _df, _perspective_df):
         perspective_df["full_text"] = df[content_column_name]
     df.drop(columns=[begin_col, end_col], inplace=True)
     perspective_df.sort_values(by=f'{attribute}_score', ascending=False, inplace=True)
-    perspective_df.to_csv(path, index=False)
+    if path is not None:
+        perspective_df.to_csv(path, index=False)
     return perspective_df
 
 def get_full_comment_context(comments_path, posts_path):
@@ -109,28 +110,12 @@ def get_full_comment_context(comments_path, posts_path):
 if __name__ == '__main__':
     gsheets_api = get_gsheets_api()
     spreadsheet_id = gsheets_api['spreadsheet_id']
+    perspective_sheet_id = gsheets_api['perspective_sheet_id']
     comments_sheet_id = gsheets_api['comments_sheet_id']
-    posts_sheet_id = gsheets_api['posts_sheet_id']
     google_sheets_service = gsheets_api['google_sheets_service']
-    comments_df = to_csv(path='comments.csv', service=google_sheets_service, spreadsheet_id=spreadsheet_id, sheet_id=comments_sheet_id)
-    posts_df = to_csv(path='submissions.csv', service=google_sheets_service, spreadsheet_id=spreadsheet_id, sheet_id=posts_sheet_id)
-    comments_df = get_full_comment_context(comments_path='comments.csv', posts_path='submissions.csv')
-    print(comments_df['full_text_with_context'].iloc[0])
-    print('==================')
-    print(comments_df['full_text_with_context'].iloc[1])
-    print('==================')
-    print(comments_df['full_text_with_context'].iloc[2])
-    print('==================')
-    print(comments_df['full_text_with_context'].iloc[3])
-    print('==================')
-    print(comments_df['full_text_with_context'].iloc[4])
-    print('==================')
-    print(comments_df['full_text_with_context'].iloc[5])
-    print('==================')
-    print(comments_df['full_text_with_context'].iloc[6])
-    print('==================')
-    print(comments_df['full_text_with_context'].iloc[7])
-    print('==================')
-    print(comments_df['full_text_with_context'].iloc[8])
-    print('==================')
-    print(comments_df['full_text_with_context'].iloc[9])
+    perspective_df = to_csv(path='perspective_full_context.csv', service=google_sheets_service, spreadsheet_id=spreadsheet_id, sheet_id=perspective_sheet_id)
+    comments_df = to_csv(path='comments_with_context.csv', service=google_sheets_service, spreadsheet_id=spreadsheet_id, sheet_id=comments_sheet_id).dropna(subset=['id'])
+    perspective_df = perspective_df[perspective_df['sheet_name'] == 'comments']
+    for attribute in ['toxicity', 'severe_toxicity', 'threat', 'insult', 'profanity', 'identity_attack', 'inflammatory', 'attack_on_author', 'attack_on_commenter']:
+        perspective_df = read_spans(attribute, comments_df, perspective_df, path=None)
+    perspective_df.to_csv('perspective_full_context_spans.csv', index=False)
