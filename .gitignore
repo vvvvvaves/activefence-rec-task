@@ -12,3 +12,4 @@ token.json
 *.csv
 *.ipynb
 .ipynb_checkpoints/
+llm/logs/

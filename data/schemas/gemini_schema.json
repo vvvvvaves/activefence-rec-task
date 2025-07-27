@@ -1,8 +1,0 @@
-{
-    "type": "object",
-    "properties": {
-        "is_antisemitic": {"type": "boolean"},
-        "reasoning": {"type": "string"}
-    },
-    "required": ["is_antisemitic", "reasoning"]
-}

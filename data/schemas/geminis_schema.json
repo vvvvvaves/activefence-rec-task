@@ -1,0 +1,14 @@
+{
+    "properties": {
+        "user_id": {"type": "string"},
+        "post_id": {"type": "string"},
+        "comment_id": {"type": "string"},
+        "is_antisemitic": {"type": "boolean"},
+        "reasoning": {"type": "string"},
+        "suggested_prompt_modifications": {"type": "string"},
+        "gemini_id": {"type": "string"},
+        "sheet_name": {"type": "string"},
+        "conversation_length": {"type": "integer"},
+        "tokens_used": {"type": "integer"}
+    }
+}

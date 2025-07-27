@@ -33,7 +33,7 @@ def get_perspective_api_score(client, text):
         if e.resp.status == 429:
             raise e
         elif e.resp.status == 400:
-            return None # Bad request, most likely due to unknown language
+            raise e
         else:
             raise e
     return response

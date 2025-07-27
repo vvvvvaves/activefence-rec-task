@@ -103,30 +103,64 @@ def get_targeting_data():
         return json.load(f)
 
 def get_gsheets_api():
-    from llm.perspective_api import get_perspective_schema
     targeting_data = get_targeting_data()
     google_credentials = get_credentials(client_secrets_path='client_secrets.json')
     google_sheets_service = get_sheets_service(google_credentials)
     if targeting_data['spreadsheet_id'] is None:
+        # Create spreadsheet
         spreadsheet_id = create_sheet(google_sheets_service, targeting_data['spreadsheet_name'])
-        posts_sheet_id = add_sheet_to_spreadsheet(google_sheets_service, spreadsheet_id, sheet_title=targeting_data['posts_sheet_name'])
-        comments_sheet_id = add_sheet_to_spreadsheet(google_sheets_service, spreadsheet_id, sheet_title=targeting_data['comments_sheet_name'])
-        perspective_sheet_id = add_sheet_to_spreadsheet(google_sheets_service, spreadsheet_id, sheet_title=targeting_data['perspective_sheet_name'])
-        create_table_from_schema(google_sheets_service, spreadsheet_id, sheet_id=posts_sheet_id, table_name=targeting_data['posts_sheet_name'], schema_path='data/schemas/post_schema.json')
-        create_table_from_schema(google_sheets_service, spreadsheet_id, sheet_id=perspective_sheet_id, table_name=targeting_data['perspective_sheet_name'], schema_path=get_perspective_schema())
-        create_table_from_schema(google_sheets_service, spreadsheet_id, sheet_id=comments_sheet_id, table_name=targeting_data['comments_sheet_name'], schema_path='data/schemas/comment_schema.json')
-        # create_table_from_schema(google_sheets_service, spreadsheet_id, sheet_id=2, table_name=targeting_data['accounts_sheet_name'], schema_path='data/schemas/account_schema.json')
         targeting_data['spreadsheet_id'] = spreadsheet_id
-        targeting_data['posts_sheet_id'] = posts_sheet_id
-        targeting_data['comments_sheet_id'] = comments_sheet_id
-        targeting_data['perspective_sheet_id'] = perspective_sheet_id
-        with open('targeting.json', 'w', encoding='utf-8') as f:
-            json.dump(targeting_data, f, indent=4)
-    return {
-        'google_sheets_service': google_sheets_service,
+    else:
+        spreadsheet_id = targeting_data['spreadsheet_id']
+    sheet_names = [key.replace('_sheet_name', '') for key in targeting_data.keys() if '_sheet_name' in key]
+    for sheet_name in sheet_names:
+        if f'{sheet_name.lower()}_sheet_id' not in targeting_data.keys() or targeting_data[f'{sheet_name.lower()}_sheet_id'] is None:
+            targeting_data[f'{sheet_name.lower()}_sheet_name'] = sheet_name
+            sheet_id = add_sheet_to_spreadsheet(google_sheets_service, spreadsheet_id, sheet_title=targeting_data[f'{sheet_name.lower()}_sheet_name'])
+            targeting_data[f'{sheet_name.lower()}_sheet_id'] = sheet_id
+            create_table_from_schema(google_sheets_service, spreadsheet_id, sheet_id=sheet_id, table_name=targeting_data[f'{sheet_name.lower()}_sheet_name'], schema_path=f'data/schemas/{sheet_name.lower()}_schema.json')
+            with open('targeting.json', 'w', encoding='utf-8') as f:
+                json.dump(targeting_data, f, indent=4)
+    
+    output_data = {
         'spreadsheet_id': targeting_data['spreadsheet_id'],
-        'posts_sheet_id': targeting_data['posts_sheet_id'],
-        'comments_sheet_id': targeting_data['comments_sheet_id'],
-        'perspective_sheet_id': targeting_data['perspective_sheet_id']
+        'google_sheets_service': google_sheets_service,
     }
     
+    for sheet_name in sheet_names:
+        output_data[f'{sheet_name.lower()}_sheet_id'] = targeting_data[f'{sheet_name.lower()}_sheet_id']
+
+    return output_data
+
+def reset_spreadsheet_config():
+    """
+    Reset spreadsheet configuration by setting spreadsheet_id to null and removing all sheet_id key-value pairs.
+    This function will be called when the newSheet argument is provided to create a fresh spreadsheet.
+    """
+    try:
+        with open('targeting.json', 'r', encoding='utf-8') as f:
+            targeting_data = json.load(f)
+        
+        # Set spreadsheet_id to null
+        targeting_data['spreadsheet_id'] = None
+        
+        # Remove all key-value pairs where the key ends with 'sheet_id'
+        keys_to_remove = [key for key in targeting_data.keys() if key.endswith('_sheet_id')]
+        for key in keys_to_remove:
+            del targeting_data[key]
+        
+        # Save the updated configuration back to targeting.json
+        with open('targeting.json', 'w', encoding='utf-8') as f:
+            json.dump(targeting_data, f, indent=4)
+        
+        print("✓ Spreadsheet configuration reset successfully")
+        print(f"  - Removed {len(keys_to_remove)} sheet_id entries")
+        print("  - Set spreadsheet_id to null")
+
+        get_gsheets_api()
+
+        print("✓ New spreadsheet created successfully")
+        
+    except Exception as e:
+        print(f"❌ Error resetting spreadsheet configuration: {e}")
+        raise 

@@ -1,0 +1,15 @@
+{
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {
+            "user_id": {"type": "string"},
+            "post_id": {"type": "string"},
+            "comment_id": {"type": "string"},
+            "is_antisemitic": {"type": "boolean"},
+            "reasoning": {"type": "string"},
+            "suggested_prompt_modifications": {"type": "string"}
+        },
+        "required": ["user_id", "post_id", "comment_id", "is_antisemitic", "reasoning", "suggested_prompt_modifications"]
+    }
+}

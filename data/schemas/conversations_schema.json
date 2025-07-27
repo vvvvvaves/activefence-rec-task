@@ -1,0 +1,19 @@
+{
+    "properties": {
+       "post_id": {
+        "type": "string"
+       },
+       "subreddit": {
+        "type": "string"
+       },
+       "post_created": {
+        "type": "number"
+       },
+       "query": {
+        "type": "string"
+       },
+       "conversation": {
+        "type": "string"
+       }
+    }
+}

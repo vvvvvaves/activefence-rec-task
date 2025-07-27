@@ -8,9 +8,9 @@ from datetime import datetime, timedelta, timezone
 from typing import Generator
 import prawcore
 load_dotenv()
-CLIENT_ID = os.getenv('CLIENT_ID')
-CLIENT_SECRET = os.getenv('CLIENT_SECRET')
-USERNAME = os.getenv('USERNAME')
+REDDIT_CLIENT_ID = os.getenv('REDDIT_CLIENT_ID')
+REDDIT_CLIENT_SECRET = os.getenv('REDDIT_CLIENT_SECRET')
+USERNAME = os.getenv('REDDIT_USERNAME')
 USER_AGENT = f'script:afrt:v1.0 (by u/{USERNAME})'
 
 def get_client() -> praw.Reddit:
@@ -18,13 +18,13 @@ def get_client() -> praw.Reddit:
     Create and return a Reddit client instance using PRAW and environment variables.
     
     Input:
-        None (uses environment variables CLIENT_ID, CLIENT_SECRET, USER_AGENT)
+        None (uses environment variables REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, USER_AGENT)
     Output:
         praw.Reddit: An authenticated Reddit client instance.
     """
     reddit = praw.Reddit(
-        client_id=CLIENT_ID,
-        client_secret=CLIENT_SECRET,
+        client_id=REDDIT_CLIENT_ID,
+        client_secret=REDDIT_CLIENT_SECRET,
         user_agent=USER_AGENT
     )
     reddit.config.log_requests = 1
@@ -156,7 +156,9 @@ def get_posts_comments(
     for post in posts:
         cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_back)
         try:
-            post.comments.replace_more(limit=None)
+            # Limit comment expansion to prevent hanging on posts with many comments
+            # Only expand up to 10 "more comments" links to avoid excessive API calls
+            post.comments.replace_more(limit=10)
             _comments = post.comments.list()
             try:
                 for comment in _comments:

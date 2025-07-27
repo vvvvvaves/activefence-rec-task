@@ -1,0 +1,16 @@
+{
+    "properties": {
+        "username": {
+            "type": "string"
+        },
+        "posts": {
+            "type": "string"
+        },
+        "extrimism_score": {
+            "type": "number"
+        },
+        "last_updated": {
+            "type": "string"
+        }
+    }
+}

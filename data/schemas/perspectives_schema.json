@@ -9,7 +9,7 @@
         "subreddit": {
             "type": "string"
         },
-        "id": {
+        "post_id": {
             "type": "string"
         },
         "languages": {
